@@ -38,27 +38,10 @@ sub install_staging {
 };
 
 sub install_dev {
+    # assumes "prep_install_dev" was executed
     # Assumes terminal window is open
-    assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-12-xfce');
-
-    # Building SecureDrop Workstation RPM and installing it in dom0
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y make git jq"');
-    assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop-workstation"');
+    assert_script_run('qvm-run -p sd-dev "git -C securedrop-workstation fetch"');  # Update repository
     assert_script_run('qvm-run -p sd-dev "git -C securedrop-workstation checkout ' . get_var('GIT_REF') . '"');
-
-    # SecureDrop dev. env. according to https://developers.securedrop.org/en/latest/setup_development.html
-    # DOCKER INSTALL according to https://docs.docker.com/engine/install/debian/
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get update"');
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y ca-certificates curl"');
-    assert_script_run('qvm-run -p sd-dev "sudo install -m 0755 -d /etc/apt/keyrings"');
-    assert_script_run('qvm-run -p sd-dev "sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc"');
-    assert_script_run('qvm-run -p sd-dev "sudo chmod a+r /etc/apt/keyrings/docker.asc"');
-    assert_script_run('qvm-run -p sd-dev ". /etc/os-release && echo \"deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \$VERSION_CODENAME stable\" | sudo tee /etc/apt/sources.list.d/docker.list \> /dev/null"');
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get update"');
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"');
-    assert_script_run('qvm-run -p sd-dev "sudo groupadd docker || true"');
-    assert_script_run('qvm-run -p sd-dev "sudo usermod -aG docker \$USER"');
-    assert_script_run('qvm-shutdown --wait sd-dev && qvm-start sd-dev');  # Restart for groupadd to take effect
 
     # Also copy to dom0 to run tests later, but no need to configure env vars for future `make clone`.
     assert_script_run("qvm-run --pass-io sd-dev 'tar -c -C /home/user/ securedrop-workstation' | tar xvf -", timeout=>300);
