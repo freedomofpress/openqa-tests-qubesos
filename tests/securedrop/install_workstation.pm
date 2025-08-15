@@ -39,8 +39,6 @@ sub install_staging {
 
 sub install_dev {
     # Assumes terminal window is open
-
-
     assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-12-xfce');
 
     # Building SecureDrop Workstation RPM and installing it in dom0
@@ -64,7 +62,6 @@ sub install_dev {
 
     # Also copy to dom0 to run tests later, but no need to configure env vars for future `make clone`.
     assert_script_run("qvm-run --pass-io sd-dev 'tar -c -C /home/user/ securedrop-workstation' | tar xvf -", timeout=>300);
-    assert_script_run("ls");
 
     assert_script_run('qvm-run -p sd-dev "cd securedrop-workstation && make build-rpm"', timeout => 1000);
     assert_script_run("qvm-run --pass-io sd-dev 'cat /home/user/securedrop-workstation/rpm-build/RPMS/noarch/*.rpm' > /tmp/sdw.rpm");
