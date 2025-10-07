@@ -48,6 +48,11 @@ sub install_dev {
 
     assert_script_run('qvm-run -p sd-dev "cd securedrop-workstation && make build-rpm"', timeout => 1000);
     assert_script_run("qvm-run --pass-io sd-dev 'cat /home/user/securedrop-workstation/rpm-build/RPMS/noarch/*.rpm' > /tmp/sdw.rpm");
+
+    # Delete sd-dev to free up space in vm-pool so installation works in default
+    # OpenQA pool size: https://github.com/freedomofpress/securedrop-workstation/issues/1358#issuecomment-3377953056
+    assert_script_run("qvm-kill --force sd-dev && qvm-remove --force sd-dev", timeout => 120);
+
     assert_script_run('sudo dnf -y install /tmp/sdw.rpm', timeout => 1000);
 
     # setup dev config.json
