@@ -175,8 +175,9 @@ if (get_var('SYSTEM_TESTS')) {
     autotest::loadtest "tests/system_tests.pm";
 }
 
-if (check_var('SECUREDROP_INSTALL', '1')) {
-
+if (check_var('SECUREDROP_INSTALL_PREP', "test_dom0")) {
+    autotest::loadtest("tests/securedrop/install_prep.pm");
+} elsif (check_var('SECUREDROP_INSTALL', '1')) {
     # Setup sys-whonix connection so it does not interfere later
     autotest::loadtest("tests/whonix_firstrun.pm", name => "Setup_sys-whonix");
 
