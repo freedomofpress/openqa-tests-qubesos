@@ -79,7 +79,7 @@ sub build_rpm {
     # Assumes terminal window is open
 
 
-    assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-12-xfce');
+    assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-13-xfce');
 
     # Building SecureDrop Workstation RPM and installing it in dom0
     assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y make git jq"');
