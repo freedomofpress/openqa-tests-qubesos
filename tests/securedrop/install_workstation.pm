@@ -34,6 +34,10 @@ sub download_repo {
 
 sub qubes_contrib_keyring_bootstrap() {
     assert_script_run('sudo qubes-dom0-update -y qubes-repo-contrib', timeout => 120);
+
+    # FIXME [workaround] 4.3 qubes-contrib not yet available
+    assert_script_run("sudo sed -i 's/fc41/fc37/g' /etc/yum.repos.d/qubes-contrib-dom0-r4.2.repo");
+
     assert_script_run('sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-qubes-4-contrib-fedora', timeout => 120);
     assert_script_run('sudo qubes-dom0-update --clean -y securedrop-workstation-keyring', timeout => 120);
 
