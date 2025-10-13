@@ -21,7 +21,9 @@ sub download_repo {
     # Assumes "curl_via_netvm"
 
     # Building SecureDrop Workstation RPM and installing it in dom0
-    assert_script_run('sudo qubes-dom0-update -y make unzip');
+    assert_script_run('rpm -q make || sudo qubes-dom0-update -y make');
+    assert_script_run('rpm -q unzip || sudo qubes-dom0-update -y unzip');
+
 
     # Download source from git commit reference
     my $repo_archive_url = "https://github.com/freedomofpress/securedrop-workstation/archive/";
