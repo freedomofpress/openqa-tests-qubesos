@@ -22,10 +22,10 @@ sub run {
     my ($self) = @_;
     select_root_console;
 
-    $self->select_gui_console;
+    # $self->select_gui_console;
 
     # Update onion address
-    x11_start_program('xterm');
+    # x11_start_program('xterm');
 
     background_script_run("qvm-run -p sd-dev \"cd securedrop\; sed -i 's|/dev/stdout|/dev/null|g' securedrop/bin/dev-shell && make dev-tor\" </dev/null 2>&1 >/dev/null"); # | sed 's/^/[SD Server] /'"); # grep "journalist interface" so that it does not interfere with needles
     #assert_script_run("tail -f /tmp/securedrop-server.log | grep -m 1 '=> Journalist Interface <='", timeout => 90);
@@ -33,8 +33,8 @@ sub run {
     sleep(60); # wait for onion address to propagate
 
     # Update onion address
-    x11_start_program('xterm');
-    send_key('alt-f10');  # maximize xterm to ease troubleshooting
+    # x11_start_program('xterm');
+    # send_key('alt-f10');  # maximize xterm to ease troubleshooting
     assert_script_run('set -o pipefail'); # Ensure pipes fail\
     assert_script_run('export JOURNALIST_ONION=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/hostname")');
     assert_script_run('export JOURNALIST_KEY=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/authorized_clients/client.auth"| cut -d: -f3)');
@@ -45,5 +45,6 @@ sub run {
     sleep(1);
     send_key('ctrl-d');
     assert_script_run("sudo qubesctl --targets dom0 state.highstate || true", timeout => 1000);  # Reapply due to secrets change
+    # send_key('alt-f4');  # exit SecureDrop client
 }
 1;

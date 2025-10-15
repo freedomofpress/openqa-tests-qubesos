@@ -34,7 +34,12 @@ sub setup_securedrop_server {
     # WIP - debugging https://openqa.qubes-os.org/tests/128656#step/installing_SecureDrop/32
     assert_script_run('sudo qubes-dom0-update -y', timeout => 600);
     assert_script_run('sudo qubes-dom0-update -y python3.11 python3-qt5');
+
+    assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-13-xfce');
+    assert_script_run('qvm-volume resize sd-dev:private 50G', timeout=> 120);
+
     assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop"');
+    assert_script_run('qvm-run -p sd-dev "sudo apt install -y podman make"');
     send_key('alt-f4');
 
     # NOTE: These are done via qvm-run instead of gnome-terminal so that we
@@ -44,7 +49,7 @@ sub setup_securedrop_server {
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
     sleep(1); # Wait for terminal to come up
     type_string("cd securedrop\n");
-    type_string("make dev\n");
+    type_string("USE_PODMAN=1 make dev\n");
     assert_screen('securedrop-server-running', timeout=>1200);
     send_key('ctrl-c');  # stop server, now that intial setup has succeeded
     sleep(5);

@@ -46,12 +46,15 @@ sub qubes_contrib_keyring_bootstrap() {
     # FIXME [workaround] 4.3 qubes-contrib not yet available
     assert_script_run("sudo sed -i 's/fc41/fc37/g' /etc/yum.repos.d/qubes-contrib-dom0-r4.2.repo");
 
-    assert_script_run('sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-qubes-4-contrib-fedora', timeout => 120);
     assert_script_run('sudo qubes-dom0-update --clean -y securedrop-workstation-keyring', timeout => 120);
 
     # NOTE Qubes-contrib repo RPM key will stay even without the repo in the RPM
     # DB due to https://github.com/QubesOS/qubes-issues/issues/10310
     assert_script_run('sudo dnf -y remove qubes-repo-contrib');
+
+    # Run "--clean" (--assumeno to skip updates because they are unnecessary)
+    # See https://github.com/freedomofpress/securedrop-workstation/issues/1467
+    script_run('sudo qubes-dom0-update --clean --asumeno');
 }
 
 
