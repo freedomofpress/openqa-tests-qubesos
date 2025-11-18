@@ -32,6 +32,14 @@ sub download_repo {
     assert_script_run('mv securedrop-workstation-* securedrop-workstation');
 };
 
+sub enable_disposable_preload() {
+    # Enables disp. qubes preloading (Assumed any machine is >= 15G RAM)
+    # This is likely necessary because the Qubes OpenQA installation is usually
+    # less than 15G of RAM, which means that disposable preloading is disabled
+    assert_script_run("sudo qubesctl top.enable qvm.disposable-preload pillar=True");
+    assert_script_run("sudo qubesctl state.apply qvm.disposable-preload", timeout => 300);
+}
+
 sub qubes_contrib_keyring_bootstrap() {
     assert_script_run('sudo qubes-dom0-update -y qubes-repo-contrib', timeout => 120);
 
@@ -120,6 +128,7 @@ sub run {
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
 
     curl_via_netvm;  # necessary for curling script and uploading logs
+    enable_disposable_preload;
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
