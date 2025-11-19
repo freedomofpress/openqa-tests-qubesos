@@ -112,7 +112,7 @@ sub build_rpm {
     assert_script_run("qvm-run --pass-io sd-dev 'tar -c -C /home/user/ securedrop-workstation' | tar xvf -", timeout=>300);
     assert_script_run("ls");
 
-    assert_script_run('qvm-run -p sd-dev "cd securedrop-workstation && make build-rpm"', timeout => 1000);
+    assert_script_run('qvm-run -p sd-dev "cd securedrop-workstation && FEDORA_VERSION=41 make build-rpm"', timeout => 1000);
     assert_script_run("mkdir -p /home/user/securedrop-workstation/rpm-build/RPMS/noarch/");
     assert_script_run("qvm-run --pass-io sd-dev 'cat /home/user/securedrop-workstation/rpm-build/RPMS/noarch/*.rpm' > /home/user/securedrop-workstation/rpm-build/RPMS/noarch/sdw.rpm");
 };
