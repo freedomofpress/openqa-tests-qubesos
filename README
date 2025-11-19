@@ -76,3 +76,4 @@ Variables used in tests:
 SecureDrop variables used in tests:
  - `SECUREDROP_INSTALL` - when set to `1`, SecureDrop Workstation is installed
  - `SECUREDROP_TEST` - when set with a value, SecureDrop tests are run on top of an existing installation
+ - `SECUREDROP_ENV` - target envionment ('dev', 'staging', 'prod')
