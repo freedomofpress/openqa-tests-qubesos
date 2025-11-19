@@ -56,9 +56,6 @@ sub install {
     }
 
 
-    # disable screen blanking during long command
-    assert_script_run('env xset -dpms; env xset s off', valid => 0, timeout => 10);
-
     my $installation_cmd;
     if ($environment eq "prod") {
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
@@ -68,6 +65,9 @@ sub install {
     }
 
     copy_config($environment);
+
+    # disable screen blanking during long command
+    assert_script_run('env xset -dpms; env xset s off', valid => 0, timeout => 10);
 
     assert_script_run("$installation_cmd | tee /tmp/sdw-admin-apply.log",  timeout => 6000);
     upload_logs('/tmp/sdw-admin-apply.log', failok => 1);
