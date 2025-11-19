@@ -31,7 +31,8 @@ sub download_repo {
 };
 
 # Following instructions at https://github.com/freedomofpress/securedrop-workstation-docs/blob/aa89494/docs/admin/install/install.rst#download-securedrop-workstation-packages
-sub qubes_contrib_keyring_bootstrap() {
+sub qubes_contrib_keyring_bootstrap {
+    my ($environment) = @_;
 
     assert_script_run('sudo qubes-dom0-update -y qubes-repo-contrib', timeout => 120);
     assert_script_run('sudo qubes-dom0-update --clean -y securedrop-workstation-keyring', timeout => 120);
@@ -39,6 +40,11 @@ sub qubes_contrib_keyring_bootstrap() {
     sleep(15); # sleep for securedrop-workstation-keyring key to be imported,
 
     assert_script_run('sudo dnf -y remove qubes-repo-contrib');
+
+    # QA: just replace the repo URL to keep it as close as possible to prod
+    if ($environment eq "prod-qa") {
+        assert_script_run("sudo sed -i -e 's|yum.|yum-qa.|g' /etc/yum.repos.d/securedrop-workstation-keyring-dev.repo");
+    }
 };
 
 sub install {
@@ -49,15 +55,14 @@ sub install {
     # Install prod keyring package through Qubes-contrib to simulate end-user
     # path, regardless of environment. This should be OK because staging / dev
     # packages will override any prod packages due to higher version numbers
-    qubes_contrib_keyring_bootstrap();
+    qubes_contrib_keyring_bootstrap($environment);
 
     if ($environment eq "dev") {
         build_rpm();
     }
 
-
     my $installation_cmd;
-    if ($environment eq "prod") {
+    if ($environment eq "prod" || $environment eq "prod-qa") {
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
         $installation_cmd = "sdw-admin --apply";
     } else {
@@ -78,7 +83,7 @@ sub copy_config {
     my $target_dir;
     my $sudo_modifier;
 
-    if ($environment eq "prod") {
+    if ($environment eq "prod" || $environment eq "prod-qa") {
         # Place configuration files directly in final directory
         $target_dir = "/usr/share/securedrop-workstation-dom0-config";
         assert_script_run("sudo mkdir -p $target_dir");
