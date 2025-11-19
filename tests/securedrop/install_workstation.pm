@@ -142,14 +142,21 @@ sub run {
     $self->select_gui_console;
     assert_screen "desktop";
 
+    # Validate environment
+    my $environment = get_var('SECUREDROP_ENV');
+    my @valid_environments = qw(dev staging prod prod-qa);
+    if (not grep { $_ eq $environment } @valid_environments) {
+        die "Invalid environment: '$environment'. It must be one of: " . join(", ", @valid_environments) . ".\n";
+    } else {
     x11_start_program('xterm');
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
+    }
 
     curl_via_netvm;  # necessary for curling script and uploading logs
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
-    install(get_var('SECUREDROP_ENV', 'dev'));
+    install($environment);
 
     send_key('alt-f4');  # close terminal
 }
