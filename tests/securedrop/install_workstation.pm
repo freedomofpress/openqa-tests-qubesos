@@ -52,13 +52,13 @@ sub install {
 
     download_repo();
 
-    # Install prod keyring package through Qubes-contrib to simulate end-user
-    # path, regardless of environment. This should be OK because staging / dev
-    # packages will override any prod packages due to higher version numbers
-    qubes_contrib_keyring_bootstrap($environment);
-
     if ($environment eq "dev") {
         build_rpm();
+    } else {
+        # Install prod keyring package through Qubes-contrib to simulate end-user
+        # path, regardless of environment. This should be OK because staging
+        # packages will override any prod packages due to higher version numbers
+        qubes_contrib_keyring_bootstrap($environment);
     }
 
     my $installation_cmd;
