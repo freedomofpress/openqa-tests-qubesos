@@ -20,7 +20,7 @@ sub download_repo {
     # Assumes terminal window is open
     # Assumes "curl_via_netvm"
 
-    # Building SecureDrop Workstation RPM and installing it in dom0
+    # Fetch the repo without the need of "sd-dev" and "make clone"
     assert_script_run('sudo qubes-dom0-update -y make unzip');
 
     # Download source from git commit reference
@@ -50,15 +50,18 @@ sub qubes_contrib_keyring_bootstrap {
 sub install {
     my ($environment) = @_;
 
-    download_repo();
-
-    # Install prod keyring package through Qubes-contrib to simulate end-user
-    # path, regardless of environment. This should be OK because staging / dev
-    # packages will override any prod packages due to higher version numbers
-    qubes_contrib_keyring_bootstrap($environment);
 
     if ($environment eq "dev") {
-        build_rpm();
+        # Create a dev environment and sync to dom0 (allows building local RPMs)
+        make_clone();
+    } else {
+        # Fetch repository to access Makefile, etc. (but no need to build RPMs)
+        download_repo();
+
+        # Install prod keyring package through Qubes-contrib to simulate end-user
+        # path, regardless of environment. This should be OK because staging
+        # packages will override any prod packages due to higher version numbers
+        qubes_contrib_keyring_bootstrap($environment);
     }
 
     my $installation_cmd;
@@ -101,9 +104,9 @@ sub copy_config {
 };
 
 
-sub build_rpm {
-    # Assumes terminal window is open
+sub make_clone {
 
+    # Assumes terminal window is open
 
     assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-12-xfce');
 
@@ -126,13 +129,11 @@ sub build_rpm {
     assert_script_run('qvm-run -p sd-dev "sudo usermod -aG docker \$USER"');
     assert_script_run('qvm-shutdown --wait sd-dev && qvm-start sd-dev');  # Restart for groupadd to take effect
 
-    # Also copy to dom0 to run tests later, but no need to configure env vars for future `make clone`.
+    # First repo cloning (does not build RPM)
     assert_script_run("qvm-run --pass-io sd-dev 'tar -c -C /home/user/ securedrop-workstation' | tar xvf -", timeout=>300);
-    assert_script_run("ls");
 
-    assert_script_run('qvm-run -p sd-dev "cd securedrop-workstation && make build-rpm"', timeout => 1000);
-    assert_script_run("mkdir -p /home/user/securedrop-workstation/rpm-build/RPMS/noarch/");
-    assert_script_run("qvm-run --pass-io sd-dev 'cat /home/user/securedrop-workstation/rpm-build/RPMS/noarch/*.rpm' > /home/user/securedrop-workstation/rpm-build/RPMS/noarch/sdw.rpm");
+    # Re-clone, this time with RPM being built and copied to dom0 in the process
+    assert_script_run('(cd securedrop-workstation && make clone)', timeout => 1000);
 };
 
 
