@@ -182,7 +182,7 @@ sub run {
 
     script_run("pkill xscreensaver");
 
-    #assert_script_run("sudo qubes-dom0-update --enablerepo=qubes-dom0-current-testing -y qubes-dist-upgrade", timeout => 360);
+    assert_script_run("sudo qubes-dom0-update --enablerepo=qubes-dom0-current-testing -y qubes-dist-upgrade", timeout => 360);
     if (get_var('RELEASE_UPGRADE_REPO')) {
         # like https://raw.githubusercontent.com/marmarek/qubes-dist-upgrade/convert-luks
         my $url = get_var('RELEASE_UPGRADE_REPO');

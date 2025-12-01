@@ -99,6 +99,14 @@ if (get_var('ISO')) {
     }
 }
 
+if (check_var('SECUREDROP_INSTALL', '1')) {
+
+    # Setup sys-whonix connection so it does not interfere later
+    autotest::loadtest("tests/whonix_firstrun.pm", name => "Setup_sys-whonix");
+
+    autotest::loadtest("tests/securedrop/install_workstation.pm");
+}
+
 if (check_var('RELEASE_UPGRADE', '1')) {
     if (get_var('UPDATE') || get_var('SALT_SYSTEM_TESTS')) {
         if (check_var("VERSION", "4.1")) {
@@ -175,13 +183,7 @@ if (get_var('SYSTEM_TESTS')) {
     autotest::loadtest "tests/system_tests.pm";
 }
 
-if (check_var('SECUREDROP_INSTALL', '1')) {
-
-    # Setup sys-whonix connection so it does not interfere later
-    autotest::loadtest("tests/whonix_firstrun.pm", name => "Setup_sys-whonix");
-
-    autotest::loadtest("tests/securedrop/install_workstation.pm");
-} elsif (check_var('SECUREDROP_TEST', "test_dom0")) {
+if (check_var('SECUREDROP_TEST', "test_dom0")) {
     autotest::loadtest("tests/securedrop/test_dom0.pm");
 } elsif (check_var('SECUREDROP_TEST', "test_gui")) {
     # autotest::loadtest("tests/securedrop/server_setup.pm");
