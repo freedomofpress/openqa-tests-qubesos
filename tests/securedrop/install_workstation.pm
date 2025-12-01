@@ -20,7 +20,7 @@ sub download_repo {
     # Assumes terminal window is open
     # Assumes "curl_via_netvm"
 
-    # Building SecureDrop Workstation RPM and installing it in dom0
+    # Fetch the repo without the need of "sd-dev" and "make clone"
     assert_script_run('sudo qubes-dom0-update -y make unzip');
 
     # Download source from git commit reference
@@ -30,48 +30,79 @@ sub download_repo {
     assert_script_run('mv securedrop-workstation-* securedrop-workstation');
 };
 
-sub qubes_contrib_keyring_bootstrap() {
+# Following instructions at https://github.com/freedomofpress/securedrop-workstation-docs/blob/aa89494/docs/admin/install/install.rst#download-securedrop-workstation-packages
+sub qubes_contrib_keyring_bootstrap {
+    my ($environment) = @_;
+
     assert_script_run('sudo qubes-dom0-update -y qubes-repo-contrib', timeout => 120);
-    assert_script_run('sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-qubes-4-contrib-fedora', timeout => 120);
     assert_script_run('sudo qubes-dom0-update --clean -y securedrop-workstation-keyring', timeout => 120);
 
-    # NOTE Qubes-contrib repo RPM key will stay even without the repo in the RPM
-    # DB due to https://github.com/QubesOS/qubes-issues/issues/10310
-    assert_script_run('sudo dnf -y remove qubes-repo-contrib');
-}
+    sleep(15); # sleep for securedrop-workstation-keyring key to be imported,
 
+    assert_script_run('sudo dnf -y remove qubes-repo-contrib');
+
+    # QA: just replace the repo URL to keep it as close as possible to prod
+    if ($environment eq "prod-qa") {
+        assert_script_run("sudo sed -i -e 's|yum.|yum-qa.|g' /etc/yum.repos.d/securedrop-workstation-keyring-dev.repo");
+    }
+};
 
 sub install {
     my ($environment) = @_;
 
-    download_repo();
-
-    # Install prod keyring package through Qubes-contrib to simulate end-user
-    # path, regardless of environment. This should be OK because staging / dev
-    # packages will override any prod packages due to higher version numbers
-    qubes_contrib_keyring_bootstrap();
 
     if ($environment eq "dev") {
-        build_rpm();
+        # Create a dev environment and sync to dom0 (allows building local RPMs)
+        make_clone();
+    } else {
+        # Fetch repository to access Makefile, etc. (but no need to build RPMs)
+        download_repo();
     }
-    copy_config();
 
-    assert_script_run('env xset -dpms; env xset s off', valid => 0, timeout => 10); # disable screen blanking during long command
-    assert_script_run("cd securedrop-workstation && make $environment | tee /tmp/sdw-admin-apply.log",  timeout => 6000);
+    my $installation_cmd;
+    if ($environment eq "prod" || $environment eq "prod-qa") {
+        qubes_contrib_keyring_bootstrap($environment);
+        assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
+        $installation_cmd = "sdw-admin --apply";
+    } else {
+        $installation_cmd = "cd securedrop-workstation && make $environment";
+    }
+
+    copy_config($environment);
+
+    # disable screen blanking during long command
+    assert_script_run('env xset -dpms; env xset s off', valid => 0, timeout => 10);
+
+    assert_script_run("$installation_cmd | tee /tmp/sdw-admin-apply.log",  timeout => 6000);
     upload_logs('/tmp/sdw-admin-apply.log', failok => 1);
 };
 
 sub copy_config {
-    # This copies a "dev" config. The appropriate make {staging,dev} target
-    # should handle the environment change in the config file
-    assert_script_run('echo {\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"bnbo6ryxq24fz27chs5fidscyqhw2hlyweelg4nmvq76tpxvofpyn4qd.onion\", \"key\": \"FDF476DUDSB5M27BIGEVIFCFGHQJ46XS3STAP7VG6Z2OWXLHWZPA\"}, \"environment\": \"dev\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}} | tee /home/user/securedrop-workstation/config.json');
-    assert_script_run("curl https://raw.githubusercontent.com/freedomofpress/securedrop/d91dc67/securedrop/tests/files/test_journalist_key.sec.no_passphrase | tee /home/user/securedrop-workstation/sd-journalist.sec");
+    my ($environment) = @_;
+    my $target_dir;
+    my $sudo_modifier;
+
+    if ($environment eq "prod" || $environment eq "prod-qa") {
+        # Place configuration files directly in final directory
+        $target_dir = "/usr/share/securedrop-workstation-dom0-config";
+        assert_script_run("sudo mkdir -p $target_dir");
+        $sudo_modifier = "sudo "; # Tee command used later needs to run as root
+    } else {
+        # Place files in cloned repo (make targets will deal with the rest)
+        $target_dir = "/home/user/securedrop-workstation";
+        $sudo_modifier = "";  # no need for "sudo"
+    }
+
+    assert_script_run('echo "{\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"bnbo6ryxq24fz27chs5fidscyqhw2hlyweelg4nmvq76tpxvofpyn4qd.onion\", \"key\": \"FDF476DUDSB5M27BIGEVIFCFGHQJ46XS3STAP7VG6Z2OWXLHWZPA\"}, \"environment\": \"' . $environment . '\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}}" | ' . $sudo_modifier . 'tee ' . $target_dir . '/config.json');
+    assert_script_run("curl https://raw.githubusercontent.com/freedomofpress/securedrop/d91dc67/securedrop/tests/files/test_journalist_key.sec.no_passphrase | $sudo_modifier tee $target_dir/sd-journalist.sec");
+
+
 };
 
 
-sub build_rpm {
-    # Assumes terminal window is open
+sub make_clone {
 
+    # Assumes terminal window is open
 
     assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-12-xfce');
 
@@ -94,13 +125,11 @@ sub build_rpm {
     assert_script_run('qvm-run -p sd-dev "sudo usermod -aG docker \$USER"');
     assert_script_run('qvm-shutdown --wait sd-dev && qvm-start sd-dev');  # Restart for groupadd to take effect
 
-    # Also copy to dom0 to run tests later, but no need to configure env vars for future `make clone`.
+    # First repo cloning (does not build RPM)
     assert_script_run("qvm-run --pass-io sd-dev 'tar -c -C /home/user/ securedrop-workstation' | tar xvf -", timeout=>300);
-    assert_script_run("ls");
 
-    assert_script_run('qvm-run -p sd-dev "cd securedrop-workstation && make build-rpm"', timeout => 1000);
-    assert_script_run("mkdir -p /home/user/securedrop-workstation/rpm-build/RPMS/noarch/");
-    assert_script_run("qvm-run --pass-io sd-dev 'cat /home/user/securedrop-workstation/rpm-build/RPMS/noarch/*.rpm' > /home/user/securedrop-workstation/rpm-build/RPMS/noarch/sdw.rpm");
+    # Re-clone, this time with RPM being built and copied to dom0 in the process
+    assert_script_run('(cd securedrop-workstation && make clone)', timeout => 1000);
 };
 
 
@@ -110,14 +139,21 @@ sub run {
     $self->select_gui_console;
     assert_screen "desktop";
 
+    # Validate environment
+    my $environment = get_var('SECUREDROP_ENV');
+    my @valid_environments = qw(dev staging prod prod-qa);
+    if (not grep { $_ eq $environment } @valid_environments) {
+        die "Invalid environment: '$environment'. It must be one of: " . join(", ", @valid_environments) . ".\n";
+    } else {
     x11_start_program('xterm');
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
+    }
 
     curl_via_netvm;  # necessary for curling script and uploading logs
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
-    install("dev");
+    install($environment);
 
     send_key('alt-f4');  # close terminal
 }
