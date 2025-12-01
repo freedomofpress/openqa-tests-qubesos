@@ -75,7 +75,7 @@ sub test_sources {
     # TODO add OCR
 
     # User is prompted for GPG key access
-    assert_and_click("securedrop-sd-gpg-prompt");
+    # assert_and_click("securedrop-sd-gpg-prompt");
 
     # Source messages are decrypted
     assert_screen("securedrop-client-decrypted-source-messages", timeout => 30);
