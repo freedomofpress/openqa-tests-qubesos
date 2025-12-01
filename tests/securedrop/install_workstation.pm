@@ -57,15 +57,11 @@ sub install {
     } else {
         # Fetch repository to access Makefile, etc. (but no need to build RPMs)
         download_repo();
-
-        # Install prod keyring package through Qubes-contrib to simulate end-user
-        # path, regardless of environment. This should be OK because staging
-        # packages will override any prod packages due to higher version numbers
-        qubes_contrib_keyring_bootstrap($environment);
     }
 
     my $installation_cmd;
     if ($environment eq "prod" || $environment eq "prod-qa") {
+        qubes_contrib_keyring_bootstrap($environment);
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
         $installation_cmd = "sdw-admin --apply";
     } else {
