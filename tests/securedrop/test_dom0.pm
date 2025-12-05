@@ -31,8 +31,7 @@ sub run {
     my $sdw_path = "/home/user/securedrop-workstation";
 
     # Setup testing requirements and run tests
-    assert_script_run('rpm -q python3-pytest || sudo qubes-dom0-update -y python3-pytest', timeout => 300);
-    assert_script_run('rpm -q python3-pytest-cov || sudo qubes-dom0-update -y python3-pytest-cov', timeout => 300);
+    assert_script_run("make -C $sdw_path install-dom0-test-prereqs", timeout => 300);
 
     assert_script_run("env XAUTHORITY=/run/lightdm/user/xauthority DISPLAY=:0.0 CI=true make -C $sdw_path test | tee make-test.log", timeout => 2400);
 
