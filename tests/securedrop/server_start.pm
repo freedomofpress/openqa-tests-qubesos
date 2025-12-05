@@ -16,33 +16,43 @@ use strict;
 use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
-
+use securedrop qw(prep_dev_env);
 
 sub run {
     my ($self) = @_;
 
-    $self->select_gui_console;
+    $self->select_root_console;
 
-    # Update onion address
-    x11_start_program('xterm');
+    prep_dev_env;
 
-    background_script_run("qvm-run -p sd-dev \"cd securedrop\; sed -i 's|/dev/stdout|/dev/null|g' securedrop/bin/dev-shell && make dev-tor\" </dev/null 2>&1 >/dev/null"); # | sed 's/^/[SD Server] /'"); # grep "journalist interface" so that it does not interfere with needles
-    #assert_script_run("tail -f /tmp/securedrop-server.log | grep -m 1 '=> Journalist Interface <='", timeout => 90);
-    # wait_serial("=> Journalist Interface <=");
+    assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop"');
+
+    # WORKAROUND: qubes qrexec does not support "> /dev/stdout" (it's a socket)
+    assert_script_run('qvm-run -p sd-dev "sed -i \'s| > \$out| >/dev/null|g\' securedrop/securedrop/bin/dev-shell"');
+
+    # Run server in background (redirections needed to keep it alive according to openqa docs)
+    background_script_run("qvm-run -p sd-dev \"make -C securedrop dev-tor \" 2>&1 > /dev/$testapi::serialdev </dev/null ");
+
+    sleep(60); # wait some time for the server to start
+
+    # FIXME: hypothesis is that this is being send to the wrong serial terminal so it can't detect it here
+    # my $server_ready = wait_serial("=> Source Interface <=", no_regex => 1, timeout=>600);
+    # die "Server startup timed out" unless $server_ready;
+
     sleep(60); # wait for onion address to propagate
 
     # Update onion address
-    x11_start_program('xterm');
-    send_key('alt-f10');  # maximize xterm to ease troubleshooting
-    assert_script_run('set -o pipefail'); # Ensure pipes fail\
-    assert_script_run('export JOURNALIST_ONION=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/hostname")');
-    assert_script_run('export JOURNALIST_KEY=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/authorized_clients/client.auth"| cut -d: -f3)');
-    assert_script_run('sudo mkdir -p /usr/share/securedrop-workstation-dom0-config/');
-    assert_script_run('echo {\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"$JOURNALIST_ONION\", \"key\": \"$JOURNALIST_KEY\"}, \"environment\": \"prod\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}} | sudo tee /usr/share/securedrop-workstation-dom0-config/config.json');
-    type_string("cd /usr/bin && python3 -i sdw-admin --validate\n");
-    type_string("copy_config()\n");
-    sleep(1);
-    send_key('ctrl-d');
-    assert_script_run("sudo qubesctl --targets dom0 state.highstate || true", timeout => 1000);  # Reapply due to secrets change
+    # x11_start_program('xterm');
+    # send_key('alt-f10');  # maximize xterm to ease troubleshooting
+    # assert_script_run('set -o pipefail'); # Ensure pipes fail\
+    # assert_script_run('export JOURNALIST_ONION=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/hostname")');
+    # assert_script_run('export JOURNALIST_KEY=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/authorized_clients/client.auth"| cut -d: -f3)');
+    # assert_script_run('sudo mkdir -p /usr/share/securedrop-workstation-dom0-config/');
+    # assert_script_run('echo {\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"$JOURNALIST_ONION\", \"key\": \"$JOURNALIST_KEY\"}, \"environment\": \"prod\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}} | sudo tee /usr/share/securedrop-workstation-dom0-config/config.json');
+    # type_string("cd /usr/bin && python3 -i sdw-admin --validate\n");
+    # type_string("copy_config()\n");
+    # sleep(1);
+    # send_key('ctrl-d');
+    # assert_script_run("sudo qubesctl --targets dom0 state.highstate || true", timeout => 1000);  # Reapply due to secrets change
 }
 1;
