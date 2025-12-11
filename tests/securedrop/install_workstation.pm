@@ -43,7 +43,7 @@ sub qubes_contrib_keyring_bootstrap {
 
     # QA: just replace the repo URL to keep it as close as possible to prod
     if ($environment eq "prod-qa") {
-        assert_script_run("sudo sed -i -e 's|yum.|yum-qa.|g' /etc/yum.repos.d/securedrop-workstation-keyring-dev.repo");
+        assert_script_run("sudo sed -i -e 's|yum.|yum-qa.|g' /etc/yum.repos.d/securedrop-workstation-dom0.repo");
     }
 };
 
