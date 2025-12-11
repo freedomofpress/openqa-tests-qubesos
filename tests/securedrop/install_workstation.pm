@@ -42,7 +42,7 @@ sub qubes_contrib_keyring_bootstrap {
     assert_script_run('sudo dnf -y remove qubes-repo-contrib');
 
     # QA: just replace the repo URL to keep it as close as possible to prod
-    if ($environment eq "prod-qa") {
+    if (check_var("SECUREDROP_USE_PROD_QA_SERVER", "1")) {
         assert_script_run("sudo sed -i -e 's|yum.|yum-qa.|g' /etc/yum.repos.d/securedrop-workstation-dom0.repo");
     }
 };
@@ -54,14 +54,14 @@ sub install {
     if ($environment eq "dev") {
         # Create a dev environment and sync to dom0 (allows building local RPMs)
         make_clone();
-    } else {
+    } elsif ($environment eq "staging") {
         # Fetch repository to access Makefile, etc. (but no need to build RPMs)
         download_repo();
     }
 
     my $installation_cmd;
-    if ($environment eq "prod" || $environment eq "prod-qa") {
-        qubes_contrib_keyring_bootstrap($environment);
+    if ($environment eq "prod") {
+        qubes_contrib_keyring_bootstrap("$environment");
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
         $installation_cmd = "sdw-admin --apply";
     } else {
@@ -82,7 +82,7 @@ sub copy_config {
     my $target_dir;
     my $sudo_modifier;
 
-    if ($environment eq "prod" || $environment eq "prod-qa") {
+    if ($environment eq "prod") {
         # Place configuration files directly in final directory
         $target_dir = "/usr/share/securedrop-workstation-dom0-config";
         assert_script_run("sudo mkdir -p $target_dir");
@@ -144,10 +144,17 @@ sub run {
     my @valid_environments = qw(dev staging prod prod-qa);
     if (not grep { $_ eq $environment } @valid_environments) {
         die "Invalid environment: '$environment'. It must be one of: " . join(", ", @valid_environments) . ".\n";
-    } else {
+    }
+    if ($environment eq "prod-qa") {
+        # "prod-qa" doesn't carry any meaning in the workstation context. It's
+        # just a way in OpenQA to know we should also replace the repos to point
+        # to the QA ones.
+        $environment = "prod";
+        set_var("SECUREDROP_USE_PROD_QA_SERVER", "1");
+    }
+
     x11_start_program('xterm');
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
-    }
 
     curl_via_netvm;  # necessary for curling script and uploading logs
 
