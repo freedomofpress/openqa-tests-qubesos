@@ -16,6 +16,7 @@ use strict;
 use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
+use utils_securedrop qw(download_repo);
 
 sub run {
     my ($self) = @_;
@@ -24,6 +25,8 @@ sub run {
 
     curl_via_netvm; # necessary for upload_logs
 
+    # Ensure code in dom0 in order to run tests
+    download_repo();
 
     # HACK: work around "extra-files" failing to be obtained via the usual route (via CASEDIR b64)
     assert_script_run("curl https://raw.githubusercontent.com/QubesOS/openqa-tests-qubesos/refs/heads/main/extra-files/convert_junit.py 2>/dev/null > /home/user/convert_junit.py");

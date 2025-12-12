@@ -15,20 +15,7 @@ use base "installedtest";
 use strict;
 use testapi;
 use networking;
-
-sub download_repo {
-    # Assumes terminal window is open
-    # Assumes "curl_via_netvm"
-
-    # Fetch the repo without the need of "sd-dev" and "make clone"
-    assert_script_run('sudo qubes-dom0-update -y make unzip');
-
-    # Download source from git commit reference
-    my $repo_archive_url = "https://github.com/freedomofpress/securedrop-workstation/archive/";
-    assert_script_run("curl -f -L -o - $repo_archive_url" . get_var('GIT_REF') . '.zip > sdw.zip');
-    assert_script_run('unzip sdw.zip');
-    assert_script_run('mv securedrop-workstation-* securedrop-workstation');
-};
+use utils_securedrop qw(download_repo);
 
 # Following instructions at https://github.com/freedomofpress/securedrop-workstation-docs/blob/aa89494/docs/admin/install/install.rst#download-securedrop-workstation-packages
 sub qubes_contrib_keyring_bootstrap {
