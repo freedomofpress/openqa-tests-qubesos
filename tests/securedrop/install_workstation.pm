@@ -30,18 +30,6 @@ sub download_repo {
     assert_script_run('mv securedrop-workstation-* securedrop-workstation');
 };
 
-sub enable_disposable_preload() {
-    if (check_var("VERSION", "4.2")) {
-        # Preloaded disposables are only available since Qubes 4.3
-        return;
-    }
-
-    # Enables disp. qubes preloading (Assumed any machine is >= 15G RAM)
-    # This is likely necessary because the Qubes OpenQA installation is usually
-    # less than 15G of RAM, which means that disposable preloading is disabled
-    assert_script_run("sudo qubesctl top.enable qvm.disposable-preload pillar=True");
-    assert_script_run("sudo qubesctl state.apply qvm.disposable-preload", timeout => 300);
-}
 
 # Following instructions at https://github.com/freedomofpress/securedrop-workstation-docs/blob/aa89494/docs/admin/install/install.rst#download-securedrop-workstation-packages
 sub qubes_contrib_keyring_bootstrap {
@@ -171,7 +159,6 @@ sub run {
     }
 
     curl_via_netvm;  # necessary for curling script and uploading logs
-    enable_disposable_preload;
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
