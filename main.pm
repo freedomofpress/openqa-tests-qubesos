@@ -191,6 +191,10 @@ if (get_var('SYSTEM_TESTS')) {
     autotest::loadtest "tests/system_tests.pm";
 }
 
+
+if (check_var('SECUREDROP_INSTALL', '1')) {
+    autotest::loadtest("tests/securedrop/install_workstation_post.pm");
+}
 if (check_var('SECUREDROP_TEST', "test_dom0")) {
     autotest::loadtest("tests/securedrop/test_dom0.pm");
 } elsif (check_var('SECUREDROP_TEST', "test_gui")) {
