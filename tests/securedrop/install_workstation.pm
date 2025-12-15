@@ -15,7 +15,7 @@ use base "installedtest";
 use strict;
 use testapi;
 use networking;
-use utils_securedrop qw(download_repo copy_config);
+use utils_securedrop qw(download_repo configure_environment);
 
 # Following instructions at https://github.com/freedomofpress/securedrop-workstation-docs/blob/aa89494/docs/admin/install/install.rst#download-securedrop-workstation-packages
 sub qubes_contrib_keyring_bootstrap {
@@ -55,7 +55,7 @@ sub install {
         $installation_cmd = "cd securedrop-workstation && make $environment";
     }
 
-    copy_config($environment);
+    configure_environment($environment);
 
     # disable screen blanking during long command
     assert_script_run('env xset -dpms; env xset s off', valid => 0, timeout => 10);
