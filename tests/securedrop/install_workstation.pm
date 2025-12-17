@@ -101,10 +101,18 @@ sub copy_config {
 
 
 sub make_clone {
-
     # Assumes terminal window is open
 
-    assert_script_run('qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-12-xfce');
+    # Use whichever Debian template is available
+    my $debian_ver;
+    if (script_run('qvm-check debian-13-xfce') == 0) {
+        $debian_ver = "13";
+    } elsif (script_run('qvm-check debian-12-xfce') == 0) {
+        $debian_ver = "12";
+    } else {
+        die "Couldn't find a suitable Debian template"
+    }
+    assert_script_run("qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-$debian_ver-xfce");
 
     # Building SecureDrop Workstation RPM and installing it in dom0
     assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y make git jq"');
