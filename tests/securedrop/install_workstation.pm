@@ -21,7 +21,7 @@ sub download_repo {
     # Assumes "curl_via_netvm"
 
     # Fetch the repo without the need of "sd-dev" and "make clone"
-    assert_script_run('sudo qubes-dom0-update -y make unzip');
+    assert_script_run('rpm -q make unzip || sudo qubes-dom0-update -y make unzip');
 
     # Download source from git commit reference
     my $repo_archive_url = "https://github.com/freedomofpress/securedrop-workstation/archive/";
