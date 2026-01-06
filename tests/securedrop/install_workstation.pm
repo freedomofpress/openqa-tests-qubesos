@@ -51,6 +51,8 @@ sub qubes_contrib_keyring_bootstrap {
 sub install {
     my ($environment) = @_;
 
+    # Install prod keyring: necessary in all environments (.spec requires it)
+    qubes_contrib_keyring_bootstrap($environment);
 
     if ($environment eq "dev") {
         # Create a dev environment and sync to dom0 (allows building local RPMs)
@@ -62,7 +64,6 @@ sub install {
 
     my $installation_cmd;
     if ($environment eq "prod" || $environment eq "prod-qa") {
-        qubes_contrib_keyring_bootstrap($environment);
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
         $installation_cmd = "sdw-admin --apply";
     } else {
