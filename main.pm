@@ -105,6 +105,14 @@ if (check_var('DESKTOP', 'kde')) {
     autotest::loadtest "tests/i3_install.pm";
 }
 
+
+if (check_var('SECUREDROP_INSTALL', '1')) {
+    # Setup sys-whonix connection so it does not interfere later
+    autotest::loadtest("tests/whonix_firstrun.pm", name => "Setup_sys-whonix");
+
+    autotest::loadtest("tests/securedrop/install_workstation.pm");
+}
+
 if (check_var('RELEASE_UPGRADE', '1')) {
     if (get_var('UPDATE') || get_var('SALT_SYSTEM_TESTS')) {
         if (check_var("VERSION", "4.1")) {
@@ -183,11 +191,7 @@ if (get_var('SYSTEM_TESTS')) {
 }
 
 if (check_var('SECUREDROP_INSTALL', '1')) {
-    # Setup sys-whonix connection so it does not interfere later
-    autotest::loadtest("tests/whonix_firstrun.pm", name => "Setup_sys-whonix");
-
     autotest::loadtest("tests/securedrop/install_enable_preloaded_disp.pm");
-    autotest::loadtest("tests/securedrop/install_workstation.pm");
 }
 if (check_var('SECUREDROP_TEST', "test_dom0")) {
     autotest::loadtest("tests/securedrop/test_dom0.pm");
