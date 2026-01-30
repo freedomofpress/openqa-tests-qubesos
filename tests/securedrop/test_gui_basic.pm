@@ -16,24 +16,18 @@ use strict;
 use testapi;
 use networking;
 
+sub test_client_login {
+    x11_start_program('qvm-run --service sd-app qubes.StartApp+press.freedom.SecureDropClient', target_match => "securedrop-client-login");
+
+    # TODO: type remaining credentials
+}
+
 sub run {
     my ($self) = @_;
 
     $self->select_gui_console;
 
-    x11_start_program('xterm');
-    send_key('alt-f10');  # maximize xterm to ease troubleshooting
-
-    # under some circumstances sd-proxy may be powered off
-    assert_script_run('qvm-start sd-proxy --skip-if-running');
-
-    # # Close login window (next step opens it already)
-    # send_key('alt-f4');
-
-    script_run("make -C securedrop-workstation/ run-client");
-    sleep(60); # Wait for login
-
-    assert_screen("fail-here");
+    test_client_login;
 
 };
 
