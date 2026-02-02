@@ -188,10 +188,12 @@ if (check_var('SECUREDROP_INSTALL', '1')) {
 
     autotest::loadtest("tests/securedrop/install_workstation.pm");
 } elsif (check_var('SECUREDROP_TEST', "test_dom0")) {
+    if (get_var('SECUREDROP_CLIENT_PR')) {
+        autotest::loadtest("tests/securedrop/install_client_from_pr.pm");
+    }
     autotest::loadtest("tests/securedrop/test_dom0.pm");
 } elsif (check_var('SECUREDROP_TEST', "test_gui")) {
     if (get_var('SECUREDROP_CLIENT_PR')) {
-        # Modify installation to run from specific pull requests
         autotest::loadtest("tests/securedrop/install_client_from_pr.pm");
     }
     # SKIPPED awaiting completion
