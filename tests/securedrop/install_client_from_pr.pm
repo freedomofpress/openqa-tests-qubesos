@@ -26,14 +26,22 @@ sub run {
     x11_start_program('xterm');
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
 
+
     # Building SecureDrop Client and installing it
     assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y make git git-lfs jq"', timeout => 120);
     assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop-builder"', timeout => 300);
     assert_script_run('qvm-run -p sd-dev "cd securedrop-builder && make install-deps"', timeout => 600);
     assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop-client"', timeout => 300);
 
+    # Use App as client, if specified
+    my $cmd_params = ""; # try-client-pr parameters
+    if (check_var('SECUREDROP_USE_APP')) {
+        $cmd_params = "--app";
+        assert_script_run('qvm-run -p sd-dev "make -C securedrop-client install-deps-app"', timeout => 600);
+    }
+
     assert_script_run('cd securedrop-workstation');
-    assert_script_run('./scripts/try-client-pr.py ' . get_var('SECUREDROP_CLIENT_PR'), valid => 0, timeout => 900);
+    assert_script_run("./scripts/try-client-pr.py $cmd_params" . get_var('SECUREDROP_CLIENT_PR'), valid => 0, timeout => 900);
 
     send_key('alt-f4');  # close terminal
 }

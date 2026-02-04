@@ -17,7 +17,11 @@ use testapi;
 use networking;
 
 sub test_client_login {
-    x11_start_program('qvm-run --service sd-app qubes.StartApp+press.freedom.SecureDropClient', target_match => "securedrop-client-login");
+    if (check_var('SECUREDROP_USE_APP')) {
+        x11_start_program('qvm-run --service sd-app qubes.StartApp+press.freedom.SecureDropClient', target_match => "securedrop-client-login");
+    } else {
+        x11_start_program('qvm-run --service sd-app qubes.StartApp+press.freedom.SecureDropApp', target_match => "securedrop-app-login");
+    }
 
     # TODO: type remaining credentials
 }
