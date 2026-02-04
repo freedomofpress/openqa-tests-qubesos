@@ -34,14 +34,17 @@ sub run {
     assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop-client"', timeout => 300);
 
     # Use App as client, if specified
-    my $cmd_params = ""; # try-client-pr parameters
-    if (check_var('SECUREDROP_USE_APP')) {
-        $cmd_params = "--app";
+    if (check_var('SECUREDROP_USE_APP', '1')) {
+        # Increase sd-dev's private storage to install dependencies
+        assert_script_run('qvm-shutdown sd-dev', timeout => 300);
+        assert_script_run('qvm-volume resize sd-dev:private 8GiB', timeout => 600);
+
+        assert_script_run('qvm-run -p sd-dev "sudo apt install -y pipx"', timeout => 600);
         assert_script_run('qvm-run -p sd-dev "make -C securedrop-client install-deps-app"', timeout => 600);
     }
 
     assert_script_run('cd securedrop-workstation');
-    assert_script_run("./scripts/try-client-pr.py $cmd_params" . get_var('SECUREDROP_CLIENT_PR'), valid => 0, timeout => 900);
+    assert_script_run("./scripts/try-client-pr.py " . get_var('SECUREDROP_CLIENT_PR'), valid => 0, timeout => 1200);
 
     send_key('alt-f4');  # close terminal
 }
