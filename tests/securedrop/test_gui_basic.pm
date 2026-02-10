@@ -16,24 +16,31 @@ use strict;
 use testapi;
 use networking;
 
+sub test_client_login {
+    if (check_var('SECUREDROP_USE_APP', '1')) {
+
+        x11_start_program('xterm');
+        send_key('alt-f10');  # maximize xterm to ease troubleshooting
+
+        assert_script_run('qvm-run --service sd-app qubes.StartApp+press.freedom.SecureDropApp', target_match => "securedrop-app-login", timeout => 60);
+        assert_script_run('sleep 60', timeout => 65);
+
+        # DEBUG: if failed try starting directly and see what failed
+        assert_script_run('qvm-run -p sd-app "securedrop-app"', timeout => 60);
+        assert_script_run('sleep 60', timeout => 65); # Leave screen up some time to see in video
+    } else {
+        x11_start_program('qvm-run --service sd-app qubes.StartApp+press.freedom.SecureDropClient', target_match => "securedrop-client-login");
+    }
+
+    # TODO: type remaining credentials
+}
+
 sub run {
     my ($self) = @_;
 
     $self->select_gui_console;
 
-    x11_start_program('xterm');
-    send_key('alt-f10');  # maximize xterm to ease troubleshooting
-
-    # under some circumstances sd-proxy may be powered off
-    assert_script_run('qvm-start sd-proxy --skip-if-running');
-
-    # # Close login window (next step opens it already)
-    # send_key('alt-f4');
-
-    script_run("make -C securedrop-workstation/ run-client");
-    sleep(60); # Wait for login
-
-    assert_screen("fail-here");
+    test_client_login;
 
 };
 
