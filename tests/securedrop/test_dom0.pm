@@ -17,45 +17,56 @@ use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
 
+my $sdw_path = "/home/user/securedrop-workstation";
+
+sub upload_test_logs {
+    my (%args) = @_;
+
+    # Upload test logs
+    upload_logs("$sdw_path/test-data.xml", timeout => 120); # Upload original (in case conversion fails)
+
+    # HACK: work around "extra-files" failing to be obtained via the usual route (via CASEDIR b64)
+    assert_script_run("curl https://raw.githubusercontent.com/QubesOS/openqa-tests-qubesos/refs/heads/main/extra-files/convert_junit.py 2>/dev/null > /home/user/convert_junit.py");
+
+    # Upload external results
+    script_run("iconv -f utf8 -t ascii//translit $sdw_path/test-data.xml > $sdw_path/test-data-tmp.xml");
+    script_run("python3 /home/user/convert_junit.py $sdw_path/test-data-tmp.xml $sdw_path/test-data-converted.xml");
+    parse_junit_log("$sdw_path/test-data-converted.xml");
+}
 
 sub run {
     my ($self) = @_;
 
     $self->select_root_console;
 
-    curl_via_netvm; # necessary for upload_logs
-
-    # HACK: work around "extra-files" failing to be obtained via the usual route (via CASEDIR b64)
-    assert_script_run("curl https://raw.githubusercontent.com/QubesOS/openqa-tests-qubesos/refs/heads/main/extra-files/convert_junit.py 2>/dev/null > /home/user/convert_junit.py");
-
-    my $sdw_path = "/home/user/securedrop-workstation";
+    # Enable networking for log uploading to work
+    enable_dom0_network_netvm() unless $self->{network_up};
 
     # Setup testing requirements and run tests
     assert_script_run("make -C $sdw_path install-dom0-test-prereqs", timeout => 300);
 
+    # Run tests
     assert_script_run("su user -c \"env XAUTHORITY=/run/lightdm/user/xauthority DISPLAY=:0.0 CI=true make -C $sdw_path test\"", timeout => 2400);
+}
 
+sub post_run_hook {
+    my $self = shift;
 
-    upload_logs("$sdw_path/test-data.xml", failok => 1);  # Upload original (in case conversion fails)
+    # Upload loads in case of successful run
+    upload_test_logs();
 
-    script_run("iconv -f utf8 -t ascii//translit $sdw_path/test-data.xml > $sdw_path/test-data-tmp.xml");
-    script_run("python3 /home/user/convert_junit.py $sdw_path/test-data-tmp.xml $sdw_path/test-data-converted.xml");
-    script_run("head $sdw_path/test-data-converted.xml");
-
-    parse_junit_log("$sdw_path/test-data-converted.xml");
-
-};
+    # NOTE: Run at the end because some may fail and just abort execution
+    $self->SUPER::post_run_hook();
+}
 
 
 sub post_fail_hook {
     my $self = shift;
 
+    upload_test_logs();
+
+    # NOTE: Run at the end because some may fail and just abort execution
     $self->SUPER::post_fail_hook();
-
-    # make test: upload also original xml, if something goes wrong with conversion
-    upload_logs("/home/user/securedrop-workstation/test-data.xml", failok => 1);
-    upload_logs("/home/user/securedrop-workstation/test-data-converted.xml", failok => 1);
-
 };
 
 
