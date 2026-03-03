@@ -20,7 +20,6 @@ use serial_terminal qw(select_root_console);
 
 sub run {
     my ($self) = @_;
-    select_root_console;
 
     $self->select_gui_console;
 

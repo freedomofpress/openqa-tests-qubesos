@@ -17,13 +17,13 @@ use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
 
+
 sub run {
     my ($self) = @_;
 
     $self->select_root_console;
 
     curl_via_netvm; # necessary for upload_logs
-
 
     # HACK: work around "extra-files" failing to be obtained via the usual route (via CASEDIR b64)
     assert_script_run("curl https://raw.githubusercontent.com/QubesOS/openqa-tests-qubesos/refs/heads/main/extra-files/convert_junit.py 2>/dev/null > /home/user/convert_junit.py");
@@ -33,7 +33,7 @@ sub run {
     # Setup testing requirements and run tests
     assert_script_run("make -C $sdw_path install-dom0-test-prereqs", timeout => 300);
 
-    assert_script_run("env XAUTHORITY=/run/lightdm/user/xauthority DISPLAY=:0.0 CI=true make -C $sdw_path test | tee make-test.log", timeout => 2400);
+    assert_script_run("su user -c \"env XAUTHORITY=/run/lightdm/user/xauthority DISPLAY=:0.0 CI=true make -C $sdw_path test\"", timeout => 2400);
 
 
     upload_logs("$sdw_path/test-data.xml", failok => 1);  # Upload original (in case conversion fails)
