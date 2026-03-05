@@ -183,10 +183,6 @@ if (get_var('SYSTEM_TESTS')) {
 }
 
 if (check_var('SECUREDROP_INSTALL', '1')) {
-
-    # Setup sys-whonix connection so it does not interfere later
-    autotest::loadtest("tests/whonix_firstrun.pm", name => "Setup_sys-whonix");
-
     # Enable dispvm preloading to test opening documents faster
     autotest::loadtest("tests/dispvm_preload.pm");
 
