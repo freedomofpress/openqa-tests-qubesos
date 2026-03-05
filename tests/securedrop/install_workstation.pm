@@ -103,35 +103,33 @@ sub copy_config {
 sub make_clone {
     # Assumes terminal window is open
 
-    # Use whichever Debian template is available
-    my $debian_ver;
-    if (script_run('qvm-check debian-13-xfce') == 0) {
-        $debian_ver = "13";
-    } elsif (script_run('qvm-check debian-12-xfce') == 0) {
-        $debian_ver = "12";
-    } else {
-        die "Couldn't find a suitable Debian template"
-    }
-    assert_script_run("qvm-check sd-dev || qvm-create --label gray sd-dev --class StandaloneVM --template debian-$debian_ver-xfce");
+    # Obtain debian-minimal template on which to base sd-dev
+    my $debian_minimal = "debian-12-minimal";
+    assert_script_run("qvm-check $debian_minimal || qvm-template install $debian_minimal", timeout => 900);
+
+    # Create 'sd-dev' template
+    assert_script_run("qvm-check sd-dev || qvm-clone $debian_minimal sd-dev-tpl", timeout => 500);
 
     # Building SecureDrop Workstation RPM and installing it in dom0
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y make git jq"');
-    assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop-workstation"');
-    assert_script_run('qvm-run -p sd-dev "git -C securedrop-workstation checkout ' . get_var('GIT_REF') . '"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get update"', timeout => 120);
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y make git jq qubes-core-agent-networking"', timeout => 120);
 
     # SecureDrop dev. env. according to https://developers.securedrop.org/en/latest/setup_development.html
     # DOCKER INSTALL according to https://docs.docker.com/engine/install/debian/
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get update"');
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y ca-certificates curl"');
-    assert_script_run('qvm-run -p sd-dev "sudo install -m 0755 -d /etc/apt/keyrings"');
-    assert_script_run('qvm-run -p sd-dev "sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc"');
-    assert_script_run('qvm-run -p sd-dev "sudo chmod a+r /etc/apt/keyrings/docker.asc"');
-    assert_script_run('qvm-run -p sd-dev ". /etc/os-release && echo \"deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \$VERSION_CODENAME stable\" | sudo tee /etc/apt/sources.list.d/docker.list \> /dev/null"');
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get update"');
-    assert_script_run('qvm-run -p sd-dev "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"');
-    assert_script_run('qvm-run -p sd-dev "sudo groupadd docker || true"');
-    assert_script_run('qvm-run -p sd-dev "sudo usermod -aG docker \$USER"');
-    assert_script_run('qvm-shutdown --wait sd-dev && qvm-start sd-dev');  # Restart for groupadd to take effect
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y ca-certificates curl"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "install -m 0755 -d /etc/apt/keyrings"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "curl --proxy 127.0.0.1:8082 -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "chmod a+r /etc/apt/keyrings/docker.asc"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl ". /etc/os-release && echo \"deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \$VERSION_CODENAME stable\" | tee /etc/apt/sources.list.d/docker.list \> /dev/null"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get update"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"', timeout => 120);
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "groupadd docker || true"');
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "usermod -aG docker user"');
+    assert_script_run('qvm-shutdown --wait sd-dev-tpl');
+
+    assert_script_run('qvm-create sd-dev --template sd-dev-tpl --label gray');
+    assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop-workstation"');
+    assert_script_run('qvm-run -p sd-dev "git -C securedrop-workstation checkout ' . get_var('GIT_REF') . '"');
 
     # First repo cloning (does not build RPM)
     assert_script_run("qvm-run --pass-io sd-dev 'tar -c -C /home/user/ securedrop-workstation' | tar xvf -", timeout=>300);
