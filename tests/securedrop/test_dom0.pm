@@ -63,6 +63,22 @@ sub post_run_hook {
 sub post_fail_hook {
     my $self = shift;
 
+    select_root_console();
+
+    # Emergency logs in case uploading logs fails (qubes-issues#9581)
+    # (section copied from lib/installedtest.pm)
+    script_run "lspci";
+    script_run "xl info";
+    script_run "xl list";
+    script_run "xl dmesg";
+    script_run "journalctl -b|tail -n 10000", timeout => 120;
+    script_run "cat /var/log/salt/minion";
+    script_run "cat /var/log/libvirt/libxl/libxl-driver.log";
+    script_run "tail /var/log/xen/console/guest*-dm.log";
+    script_run "grep -B 100 'Kernel panic' /var/log/xen/console/guest*.log";
+    script_run "tail -200 /var/log/xen/console/guest-sys-net.log";
+    script_run "tail -200 /var/log/xen/console/guest-sys-usb.log";
+
     upload_test_logs();
 
     # NOTE: Run at the end because some may fail and just abort execution
