@@ -167,6 +167,13 @@ sub run {
 sub post_fail_hook {
     my $self = shift;
 
+    select_root_console();
+
+    # Emergency logs printing (so we have something, in case uploading them fails)
+    script_run("# salt logs for investigating salt failures like #1573");
+    script_run("cat /var/log/salt/minion");
+    script_run("find /var/log/salt/*.gz -exec gzip -dc  {} \;");
+
     $self->SUPER::post_fail_hook();
 
     upload_logs('/tmp/sdw-admin-apply.log', failok => 1);
