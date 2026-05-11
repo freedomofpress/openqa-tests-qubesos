@@ -190,6 +190,8 @@ if (check_var('SECUREDROP_INSTALL', '1')) {
 } elsif (check_var('SECUREDROP_TEST', "test_dom0")) {
     autotest::loadtest("tests/securedrop/test_dom0.pm");
 } elsif (check_var('SECUREDROP_TEST', "test_gui")) {
+    # Temporarily (ab)using test_gui just to run prep script
+    autotest::loadtest("tests/securedrop/test_upgrade_prep.pm");
     # SKIPPED awaiting completion
     # autotest::loadtest("tests/securedrop/server_setup.pm");
     # autotest::loadtest("tests/securedrop/server_start.pm");
