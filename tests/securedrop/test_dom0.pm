@@ -79,6 +79,9 @@ sub post_fail_hook {
     script_run "tail -200 /var/log/xen/console/guest-sys-net.log";
     script_run "tail -200 /var/log/xen/console/guest-sys-usb.log";
 
+    # Emergency logs for SD qubes
+    script_run "tail -n 200 /var/log/xen/console/guest-sd-*.log ";
+
     upload_test_logs();
 
     # NOTE: Run at the end because some may fail and just abort execution
