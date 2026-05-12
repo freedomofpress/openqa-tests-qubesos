@@ -77,6 +77,10 @@ sub emergency_logging {
     script_run "tail -200 /var/log/xen/console/guest-sys-net.log";
     script_run "tail -200 /var/log/xen/console/guest-sys-usb.log";
 
+    # Extra logs requested by Marek:
+    script_run "cat /var/log/xen/xen-hotplug.log";
+    script_run "lsof -n /run/lock/qubes-script.lock";
+
     # Emergency logs for SD qubes
     script_run "tail -n 200 /var/log/xen/console/guest-sd-*.log ";
 }
