@@ -52,6 +52,9 @@ sub run {
 sub post_run_hook {
     my $self = shift;
 
+    # Extra debugging info to be able to compare against failed jobs
+    emergency_logging();
+
     # Upload loads in case of successful run
     upload_test_logs();
 
@@ -59,12 +62,7 @@ sub post_run_hook {
     $self->SUPER::post_run_hook();
 }
 
-
-sub post_fail_hook {
-    my $self = shift;
-
-    select_root_console();
-
+sub emergency_logging {
     # Emergency logs in case uploading logs fails (qubes-issues#9581)
     # (section copied from lib/installedtest.pm)
     script_run "lspci";
@@ -81,7 +79,15 @@ sub post_fail_hook {
 
     # Emergency logs for SD qubes
     script_run "tail -n 200 /var/log/xen/console/guest-sd-*.log ";
+}
 
+
+sub post_fail_hook {
+    my $self = shift;
+
+    select_root_console();
+
+    emergency_logging();
     upload_test_logs();
 
     # NOTE: Run at the end because some may fail and just abort execution
