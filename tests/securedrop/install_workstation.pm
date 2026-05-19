@@ -15,6 +15,7 @@ use base "installedtest";
 use strict;
 use testapi;
 use networking;
+use serial_terminal qw(select_root_console);
 
 sub download_repo {
     # Assumes terminal window is open
