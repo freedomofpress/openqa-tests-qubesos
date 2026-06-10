@@ -17,6 +17,14 @@ use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
 
+sub enable_disposable_preload() {
+    # Enables disp. qubes preloading (Assumed any machine is >= 15G RAM)
+    # This is likely necessary because the Qubes OpenQA installation is usually
+    # less than 15G of RAM, which means that disposable preloading is disabled
+    assert_script_run("sudo qubesctl top.enable qvm.disposable-preload pillar=True");
+    assert_script_run("sudo qubesctl state.apply qvm.disposable-preload", timeout => 300);
+}
+
 sub download_repo {
     # Assumes terminal window is open
     # Assumes "curl_via_netvm"
@@ -157,6 +165,9 @@ sub run {
     }
 
     curl_via_netvm;  # necessary for curling script and uploading logs
+
+    # Enable dispvm preloading to test opening documents faster
+    enable_disposable_preload;
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
