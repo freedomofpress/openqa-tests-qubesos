@@ -183,9 +183,6 @@ if (get_var('SYSTEM_TESTS')) {
 }
 
 if (check_var('SECUREDROP_INSTALL', '1')) {
-    # Enable dispvm preloading to test opening documents faster
-    autotest::loadtest("tests/dispvm_preload.pm");
-
     autotest::loadtest("tests/securedrop/install_workstation.pm");
 } elsif (check_var('SECUREDROP_TEST', "test_dom0")) {
     autotest::loadtest("tests/securedrop/test_dom0.pm");
