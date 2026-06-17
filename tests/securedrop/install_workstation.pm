@@ -172,7 +172,7 @@ sub post_fail_hook {
 
     # Emergency logs printing (so we have something, in case uploading them fails)
     script_run("cat /var/log/salt/minion");
-    script_run("find /var/log/salt/*.gz -exec gzip -dc  {} \;");
+    script_run("zcat /var/log/salt/*.gz");
 
     $self->SUPER::post_fail_hook();
 
