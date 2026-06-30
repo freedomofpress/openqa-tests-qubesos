@@ -171,6 +171,11 @@ sub run {
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
+    # Upgrade scenario: start from prod
+    if (get_var('SECUREDROP_UPGRADE')) {
+        install("prod");
+    }
+
     install($environment);
 
     send_key('alt-f4');  # close terminal
