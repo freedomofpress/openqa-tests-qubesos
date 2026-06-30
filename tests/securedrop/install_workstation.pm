@@ -82,7 +82,7 @@ sub install {
     # disable screen blanking during long command
     assert_script_run('env xset -dpms; env xset s off', valid => 0, timeout => 10);
 
-    assert_script_run("$installation_cmd | tee /tmp/sdw-admin-apply.log",  timeout => 6000);
+    assert_script_run("$installation_cmd | tee /tmp/sdw-admin-apply_$environment.log",  timeout => 6000);
     upload_logs('/tmp/sdw-admin-apply.log', failok => 1);
 };
 
@@ -181,6 +181,27 @@ sub run {
     send_key('alt-f4');  # close terminal
 }
 
+sub upload_install_logs {
+    if (get_var('SECUREDROP_UPGRADE')) {
+        upload_logs('/tmp/sdw-admin-apply_prod.log', failok => 1);
+    }
+    my $environment = get_var('SECUREDROP_ENV');
+    upload_logs("/tmp/sdw-admin-apply_$environment.log", failok => 1);
+}
+
+
+sub post_run_hook {
+    my $self = shift;
+
+    select_root_console();
+
+    # Upload logs in case of successful run
+    upload_install_logs();
+
+    # NOTE: Run at the end because some may fail and just abort execution
+    $self->SUPER::post_run_hook();
+}
+
 sub post_fail_hook {
     my $self = shift;
 
@@ -190,9 +211,10 @@ sub post_fail_hook {
     script_run("cat /var/log/salt/minion");
     script_run("zcat /var/log/salt/*.gz");
 
-    $self->SUPER::post_fail_hook();
+    upload_install_logs();
 
-    upload_logs('/tmp/sdw-admin-apply.log', failok => 1);
+    # NOTE: Run at the end because some may fail and just abort execution
+    $self->SUPER::post_fail_hook();
 };
 
 1;
