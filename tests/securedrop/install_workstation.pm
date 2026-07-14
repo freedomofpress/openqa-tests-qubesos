@@ -60,7 +60,8 @@ sub install {
     my ($environment) = @_;
 
 
-    if ($environment eq "dev") {
+    # Pick whether we'll need build local RPMs or just need access to tooling
+    if ($environment eq "dev" || get_var("SECUREDROP_UPGRADE")) {
         # Create a dev environment and sync to dom0 (allows building local RPMs)
         make_clone();
     } else {
@@ -113,7 +114,7 @@ sub make_clone {
     # Assumes terminal window is open
 
     # Obtain debian-minimal template on which to base sd-dev
-    my $debian_minimal = "debian-12-minimal";
+    my $debian_minimal = "debian-13-minimal";
     assert_script_run("qvm-check $debian_minimal || qvm-template install $debian_minimal", timeout => 900);
 
     # Create 'sd-dev' template
@@ -134,6 +135,10 @@ sub make_clone {
     assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"', timeout => 120);
     assert_script_run('qvm-run -p -u root sd-dev-tpl "groupadd docker || true"');
     assert_script_run('qvm-run -p -u root sd-dev-tpl "usermod -aG docker user"');
+
+    # Enable passwordless root for dev scripts that assume it, can run fine
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y qubes-core-agent-passwordless-root"');
+
     assert_script_run('qvm-shutdown --wait sd-dev-tpl');
 
     assert_script_run('qvm-create sd-dev --template sd-dev-tpl --label gray');
@@ -146,7 +151,6 @@ sub make_clone {
     # Re-clone, this time with RPM being built and copied to dom0 in the process
     assert_script_run('(cd securedrop-workstation && make clone)', timeout => 1000);
 };
-
 
 sub run {
     my ($self) = @_;
@@ -170,11 +174,6 @@ sub run {
     enable_disposable_preload;
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
-
-    # Upgrade scenario: start from prod
-    if (get_var('SECUREDROP_UPGRADE')) {
-        install("prod");
-    }
 
     install($environment);
 
