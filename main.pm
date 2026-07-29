@@ -183,15 +183,15 @@ if (get_var('SYSTEM_TESTS')) {
 }
 
 if (check_var('SECUREDROP_INSTALL', '1')) {
-    autotest::loadtest("tests/securedrop/install_workstation.pm");
+    if (check_var('SECUREDROP_UPGRADE', '1')) {
+        autotest::loadtest("tests/securedrop/install_workstation.pm", env=>"prod");
+        autotest::loadtest("tests/securedrop/install_workstation_updates.pm");
+    } else {
+        autotest::loadtest("tests/securedrop/install_workstation.pm");
+    }
 } elsif (check_var('SECUREDROP_TEST', "test_dom0")) {
     autotest::loadtest("tests/securedrop/test_dom0.pm");
 } elsif (check_var('SECUREDROP_TEST', "test_gui")) {
-    # NOTE: temporarily placed under gui_test so we don't have to wait until a
-    # test with the right name exists. Ideally move this out into its own test.
-    if (get_var('SECUREDROP_UPGRADE')) {
-        autotest::loadtest("tests/securedrop/install_workstation_updates.pm");
-    }
     # SKIPPED awaiting completion
     # autotest::loadtest("tests/securedrop/server_setup.pm");
     # autotest::loadtest("tests/securedrop/server_start.pm");
