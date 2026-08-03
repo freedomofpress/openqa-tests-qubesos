@@ -40,6 +40,8 @@ sub run {
     assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y qubes-core-agent-dom0-updates'", timeout=> 120);
 
     assert_script_run("cd securedrop-workstation");
+
+    # TODO: switch environment to the one set during installation
     my $server_pid = background_script_run("script -e -c \"bash -c './scripts/local-rpm-server.sh'; echo local-rpm-server-finished-\$?- >/dev/$testapi::serialdev\" securedrop-yum-server.log </dev/null");
 
     sleep(20); # just to see the server's output
