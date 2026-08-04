@@ -30,8 +30,7 @@ sub run {
         $self->handle_system_startup;
     }
 
-    x11_start_program('xterm');
-    send_key('alt-f10');  # maximize xterm to ease troubleshooting
+    select_root_console;
 
     # Install dependencies (assuming minimal sd-dev template)
     assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y rpm gpg git createrepo-c'", timeout=> 120);
@@ -42,10 +41,9 @@ sub run {
     assert_script_run("cd securedrop-workstation");
 
     # TODO: switch environment to the one set during installation
-    my $server_pid = background_script_run("script -e -c \"bash -c './scripts/local-rpm-server.sh'; echo local-rpm-server-finished-\$?- >/dev/$testapi::serialdev\" securedrop-yum-server.log </dev/null");
+    $self->{rpm_server_pid} = background_script_run("script -e -c \"bash -c './scripts/local-rpm-server.sh'; echo local-rpm-server-finished-\$?- >/dev/$testapi::serialdev\" securedrop-yum-server.log </dev/null");
 
-    sleep(20); # just to see the server's output
-    send_key('alt-f9');
+    $self->select_gui_console;
 
     # Go through launcher
     assert_and_click("securedrop-launcher-intro");
@@ -65,6 +63,13 @@ sub run {
 
     # Ensure Inbox autostarts
     assert_screen('securedrop-inbox-login-screen', timeout => 120);
+
+    select_root_console;
+
+    # Cleanly shut down yum server (otherwise updatevm not set back to orignal)
+    script_run("kill -2 " . $self->{sd_server_pid});  # Shut down server with "Ctrl-C"
+    my $res = testapi::wait_serial(qr/local-sd-server-finished-\d+-/, timeout => 15);
+    diag "script could not be shut down" unless $res;
 
     # TODO sanity-checking updater logs
 }
