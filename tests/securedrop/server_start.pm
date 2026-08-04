@@ -32,14 +32,21 @@ sub run {
 
     # Run server in background (redirections needed to keep it alive according to openqa docs)
     background_script_run("qvm-run -p sd-dev \"make -C securedrop dev-tor \" 2>&1 > /dev/$testapi::serialdev </dev/null ");
+    my $self->{sd_server_pid} = background_script_run("script -e -c \"bash -c 'make -C securedrop dev-tor'; echo local-sd-server-finished-\$?- >/dev/$testapi::serialdev\" securedrop-test-server.log </dev/null");
 
     sleep(60); # wait some time for the server to start
 
     # FIXME: hypothesis is that this is being send to the wrong serial terminal so it can't detect it here
-    # my $server_ready = wait_serial("=> Source Interface <=", no_regex => 1, timeout=>600);
-    # die "Server startup timed out" unless $server_ready;
+    my $server_ready = testapi::wait_serial("=> Source Interface <=", no_regex => 1, timeout=>600);
+    diag "Server startup timed out" unless $server_ready;
 
     sleep(60); # wait for onion address to propagate
+
+    # Politely shutdown server at the end of test
+    script_run("kill -2 " . $self->{sd_server_pid});  # Shut down server with "Ctrl-C"
+    my $res = testapi::wait_serial(qr/local-sd-server-finished-\d+-/, timeout => 15);
+    diag "script could not be shut down" unless $res;
+    die "script could not be shut down" unless $res;
 
     # Update onion address
     # x11_start_program('xterm');
