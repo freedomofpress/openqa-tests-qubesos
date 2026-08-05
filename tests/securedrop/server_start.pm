@@ -25,8 +25,6 @@ sub run {
 
     prep_dev_env;
 
-    assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop"');
-
     # WORKAROUND: qubes qrexec does not support "> /dev/stdout" (it's a socket)
     assert_script_run('qvm-run -p sd-dev "sed -i \'s| > \$out| >/dev/null|g\' securedrop/securedrop/bin/dev-shell"');
 
