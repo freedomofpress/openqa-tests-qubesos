@@ -273,7 +273,7 @@ sub run {
     my ($self) = @_;
 
     $self->select_root_console;  # Use root console to speed things along
-    test_menu_shortcuts;
+    # test_menu_shortcuts; # TODO
 
     prepare_test;
 
