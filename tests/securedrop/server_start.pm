@@ -29,8 +29,7 @@ sub run {
     assert_script_run('qvm-run -p sd-dev "sed -i \'s| > \$out| >/dev/null|g\' securedrop/securedrop/bin/dev-shell"');
 
     # Run server in background (redirections needed to keep it alive according to openqa docs)
-    background_script_run("qvm-run -p sd-dev \"make -C securedrop dev-tor \" 2>&1 > /dev/$testapi::serialdev </dev/null ");
-    my $self->{sd_server_pid} = background_script_run("script -e -c \"bash -c 'make -C securedrop dev-tor'; echo local-sd-server-finished-\$?- >/dev/$testapi::serialdev\" securedrop-test-server.log </dev/null");
+    $self->{sd_server_pid} = background_script_run("script -e -c \"qvm-run -p sd-dev -- bash -c 'make -C securedrop dev-tor'; echo local-sd-server-finished-\$?-\" /dev/$testapi::serialdev </dev/null");
 
     sleep(60); # wait some time for the server to start
 
