@@ -34,8 +34,8 @@ sub run {
 
     sleep(60); # wait some time for the server to start
 
-    # FIXME: hypothesis is that this is being send to the wrong serial terminal so it can't detect it here
-    my $server_ready = testapi::wait_serial("=> Source Interface <=", no_regex => 1, timeout=>600);
+    # NOTE: Very slow server build. We may want to build it elsewhere.
+    my $server_ready = testapi::wait_serial("=> Source Interface <=", no_regex => 1, timeout=>1600);
     diag "Server startup timed out" unless $server_ready;
 
     sleep(60); # wait for onion address to propagate
