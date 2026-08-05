@@ -55,7 +55,7 @@ sub prep_dev_env {
     }
 
     # Make sure time is the same. Otherwise TOTP won't work
-    assert_script_run("date -s @" . time());
+    assert_script_run("sudo date -s @" . time());
     assert_script_run("qvm-run -u root --no-shell sd-dev /usr/bin/qvm-sync-clock");
 }
 
