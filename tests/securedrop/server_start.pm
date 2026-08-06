@@ -16,7 +16,7 @@ use strict;
 use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
-use securedrop qw(prep_dev_env);
+use securedrop qw(prep_dev_env update_server_config);
 
 sub run {
     my ($self) = @_;
@@ -29,25 +29,18 @@ sub run {
     assert_script_run('qvm-run -p sd-dev "sed -i \'s| > \$out| >/dev/null|g\' securedrop/securedrop/bin/dev-shell"');
 
     # Run server in background (redirections needed to keep it alive according to openqa docs)
-    $self->{sd_server_pid} = background_script_run("script -e -c \"qvm-run -p sd-dev -- bash -c 'make -C securedrop dev-tor'; echo local-sd-server-finished-\$?-\" /dev/$testapi::serialdev </dev/null");
-
-    sleep(60); # wait some time for the server to start
+    $self->{sd_server_pid} = background_script_run("script -e -c \"qvm-run -p sd-dev -- bash -c 'make -C securedrop dev-tor'\" /dev/$testapi::serialdev </dev/null");
 
     # NOTE: Very slow server build. We may want to build it elsewhere.
     my $server_ready = testapi::wait_serial("=> Source Interface <=", no_regex => 1, timeout=>1600);
     diag "Server startup timed out" unless $server_ready;
 
-    sleep(60); # wait for onion address to propagate
+    update_server_config;
 
-    # Politely shutdown server at the end of test
-    script_run("kill -2 " . $self->{sd_server_pid});  # Shut down server with "Ctrl-C"
-    my $res = testapi::wait_serial(qr/local-sd-server-finished-\d+-/, timeout => 15);
-    diag "script could not be shut down" unless $res;
-    die "script could not be shut down" unless $res;
+    # Politely shutdown ("Ctrl-C") server at the end of test
+    # script_run("kill -2 " . $self->{sd_server_pid});
 
     # Update onion address
-    # x11_start_program('xterm');
-    # send_key('alt-f10');  # maximize xterm to ease troubleshooting
     # assert_script_run('set -o pipefail'); # Ensure pipes fail\
     # assert_script_run('export JOURNALIST_ONION=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/hostname")');
     # assert_script_run('export JOURNALIST_KEY=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/authorized_clients/client.auth"| cut -d: -f3)');

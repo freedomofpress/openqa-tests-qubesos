@@ -17,8 +17,40 @@ use base Exporter;
 use Exporter;
 
 our @EXPORT = qw(
+  update_server_config
   prep_dev_env
 );
+
+
+sub update_server_config {
+    my $config_path = "/usr/share/securedrop-workstation-dom0-config";
+    assert_script_run("sudo mkdir -p $config_path");
+
+    # Write a new 'config.json' based on OpenQA variables
+    my $environment = get_var("SECUREDROP_ENV");
+
+    # External server (always overrides local server preference)
+    my $sd_journalist_onion = get_var('SECUREDROP_JI_ONION');
+    my $sd_journalist_onion_key = get_var('SECUREDROP_JI_ONION_KEY');
+
+    if (!defined $sd_journalist_onion) {
+        # Local server
+        my $qvm_run_args = "-p -u root --no-color-stderr --no-color-output"; # run as root and prevent output colors
+        my $onion_service_dir = "/var/lib/docker/volumes/sd-onion-services/_data/journalist";
+        $sd_journalist_onion = script_output("qvm-run $qvm_run_args sd-dev \"cat $onion_service_dir/hostname\"");
+        $sd_journalist_onion_key = script_output("qvm-run $qvm_run_args sd-dev \"cat $onion_service_dir/authorized_clients/client.auth\"| cut -d: -f3");
+    }
+
+    assert_script_run("echo '{\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"$sd_journalist_onion\", \"key\": \"$sd_journalist_onion_key\"}, \"environment\": \"$environment\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}}' | sudo tee $config_path/config.json");
+
+    # Move the config file into the right places in dom0
+    assert_script_run("su user -c \"echo 'copy_config()' | (cd /usr/bin/ && python3 -i sdw-admin --validate)\"");
+
+    # Re-provision to place config secrets in respective VMs
+    assert_script_run('qvm-kill sd-proxy sd-app');
+    assert_script_run("sudo qubesctl --targets dom0 state.highstate", timeout => 1000);
+    assert_script_run("qvm-start sd-proxy sd-app");
+};
 
 sub prep_dev_env {
 

@@ -17,7 +17,6 @@ use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
 
-
 sub run {
     my ($self) = @_;
 
