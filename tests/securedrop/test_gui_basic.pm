@@ -43,7 +43,10 @@ sub test_login {
 
     # Password
     type_string("correct horse battery staple profanity oil chewy");
-    send_key('tab'); # switches to TOTP field
+
+    # Switch to TOTP field
+    send_key('tab');
+    send_key('tab');
 
     # TOTP code
     my $totp = generate_totp("JHCOGO7VCER3EJ4L");
