@@ -135,7 +135,7 @@ sub make_clone {
 
     # Building SecureDrop Workstation RPM and installing it in dom0
     assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get update"', timeout => 120);
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y make git jq qubes-core-agent-networking"', timeout => 120);
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y make git jq qubes-core-agent-networking qubes-core-agent-passwordless-root"', timeout => 120);
 
     # SecureDrop dev. env. according to https://developers.securedrop.org/en/latest/setup_development.html
     # DOCKER INSTALL according to https://docs.docker.com/engine/install/debian/
@@ -149,8 +149,6 @@ sub make_clone {
     assert_script_run('qvm-run -p -u root sd-dev-tpl "groupadd docker || true"');
     assert_script_run('qvm-run -p -u root sd-dev-tpl "usermod -aG docker user"');
 
-    # Enable passwordless root for dev scripts that assume it, can run fine
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y qubes-core-agent-passwordless-root"');
 
     assert_script_run('qvm-shutdown --wait sd-dev-tpl');
 
