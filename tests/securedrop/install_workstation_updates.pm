@@ -32,11 +32,8 @@ sub run {
 
     select_root_console;
 
-    # Install dependencies (assuming minimal sd-dev template)
-    assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y rpm gpg git createrepo-c'", timeout=> 120);
-
-    # Enable sd-dev to act as an update VM
-    assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y qubes-core-agent-dom0-updates'", timeout=> 120);
+    # Install dependencies that enable sd-dev (minimal) to act as an update VM
+    assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y rpm gpg git createrepo-c qubes-core-agent-dom0-updates'", timeout=> 120);
 
     # TODO: switch environment to the one set during installation
     $self->{rpm_server_pid} = background_script_run("sudo -u user script -e -c \"bash -c 'cd securedrop-workstation && ./scripts/local-rpm-server.sh'; echo local-rpm-server-finished-\$?- >/dev/$testapi::serialdev\" securedrop-yum-server.log </dev/null");
