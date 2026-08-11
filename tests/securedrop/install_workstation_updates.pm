@@ -24,11 +24,8 @@ sub run {
     x11_start_program('xterm');
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
 
-    # Install dependencies (assuming minimal sd-dev template)
-    assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y rpm gpg git createrepo-c'", timeout=> 120);
-
-    # Enable sd-dev to act as an update VM
-    assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y qubes-core-agent-dom0-updates'", timeout=> 120);
+    # Install dependencies that enable sd-dev (minimal) to act as an update VM
+    assert_script_run("qvm-run -p sd-dev 'sudo apt-get install -y rpm gpg git createrepo-c qubes-core-agent-dom0-updates'", timeout=> 120);
 
     assert_script_run("cd securedrop-workstation");
 
