@@ -24,8 +24,9 @@ sub prepare_test {
     # Any preparations needed for the test
     update_server_config();
 
-    # make sure time is the same or TOTP won't work out (borrowed from aem.pm)
-    assert_script_run("date -s @" . time());
+    # Make sure time is the same. Otherwise TOTP won't work
+    assert_script_run("sudo date -s @" . time());
+    assert_script_run("qvm-run -u root --no-shell sd-dev /usr/bin/qvm-sync-clock");
 
     # Wait until server reachable (onion addresses may take time to propagate)
     my $connect_failed;
