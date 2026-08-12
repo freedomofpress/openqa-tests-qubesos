@@ -29,10 +29,11 @@ sub prepare_test {
 
     # Wait until server reachable (onion addresses may take time to propagate)
     my $connect_failed;
-    for my $i (1 .. 12) {
-        $connect_failed = script_run('qvm-run -p sd-proxy "curl --proxy socks5h://localhost:9150 \$(qubesdb-read /vm-config/SD_PROXY_ORIGIN)"', timeout => 10);
+    for my $i (1 .. 60) {
+        $connect_failed = script_run('qvm-run -p sd-proxy "curl --proxy socks5h://localhost:9150 \$(qubesdb-read /vm-config/SD_PROXY_ORIGIN)"');
         last unless $connect_failed;
         diag "Connection attempt $i failed, retrying...";
+        sleep 5;
     }
 
     if ($connect_failed) {
