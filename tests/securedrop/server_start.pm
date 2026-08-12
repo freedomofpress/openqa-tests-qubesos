@@ -25,6 +25,9 @@ sub run {
 
     prep_dev_env;
 
+    # make sure time is the same or TOTP won't work out (borrowed from aem.pm)
+    assert_script_run("date -s @" . time());
+
     # WORKAROUND: qubes qrexec does not support "> /dev/stdout" (it's a socket)
     assert_script_run('qvm-run -p sd-dev "sed -i \'s| > \$out| >/dev/null|g\' securedrop/securedrop/bin/dev-shell"');
 
