@@ -27,10 +27,18 @@ sub prepare_test {
     # make sure time is the same or TOTP won't work out (borrowed from aem.pm)
     assert_script_run("date -s @" . time());
 
-    # (debuging) Test server connectivity
-    script_run('echo debug-curl-onion && qvm-run -p sd-proxy "curl --proxy socks5h://localhost:9150 \$(qubesdb-read /vm-config/SD_PROXY_ORIGIN)"', timeout => 30);
-    script_run('qvm-run -p sd-proxy "sudo journalctl -u tor"');
+    # Wait until server reachable (onion addresses may take time to propagate)
+    my $connect_failed;
+    for my $i (1 .. 12) {
+        $connect_failed = script_run('qvm-run -p sd-proxy "curl --proxy socks5h://localhost:9150 \$(qubesdb-read /vm-config/SD_PROXY_ORIGIN)"', timeout => 10);
+        last unless $connect_failed;
+        diag "Connection attempt $i failed, retrying...";
+    }
 
+    if ($connect_failed) {
+        script_run('qvm-run -p sd-proxy "sudo journalctl --no-pager -n 100 -u tor"');
+        die "Failed to connect to SD server";
+    }
 }
 
 sub test_login {
