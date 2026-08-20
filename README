@@ -81,3 +81,5 @@ SecureDrop variables used in tests:
  - `SECUREDROP_TEST` - when set with a value, SecureDrop tests are run on top of an existing installation
  - `SECUREDROP_ENV` - target envionment ('dev', 'staging', 'prod', 'prod-qa')
  - `SECUREDROP_UPGRADE` - when set to any value, it'll install prod first and then the target `SECUREDROP_ENV`
+ - `SECUREDROP_JI_ONION` - Test server journalist interface onion address
+ - `SECUREDROP_JI_ONION_KEY` - Test server journalist interface onion address client key
