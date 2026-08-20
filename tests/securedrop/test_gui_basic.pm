@@ -28,6 +28,10 @@ sub prepare_test {
     assert_script_run("sudo date -s @" . time());
     assert_script_run("qvm-run -u root --no-shell sd-dev /usr/bin/qvm-sync-clock");
 
+    # DEBUG: compare time information (detecting TOTP mismatch)
+    assert_script_run("date"); # Dom0
+    assert_script_run("qvm-run -p sd-dev date"); # sd-dev
+
     # Wait until server reachable (onion addresses may take time to propagate)
     my $connect_failed;
     for my $i (1 .. 10) {
