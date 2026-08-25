@@ -16,8 +16,19 @@ use strict;
 use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
+use OpenQA::Test::RunArgs;
+
+
+sub new {
+    my ($class, $args) = @_;
+    my $self = $class->SUPER::new($args);
+    $self->{environment} = "invalid";
+    return $self;
+}
 
 sub enable_disposable_preload() {
+    my $self = shift;
+
     # Enables disp. qubes preloading (Assumed any machine is >= 15G RAM)
     # This is likely necessary because the Qubes OpenQA installation is usually
     # less than 15G of RAM, which means that disposable preloading is disabled
@@ -26,6 +37,8 @@ sub enable_disposable_preload() {
 }
 
 sub download_repo {
+    my $self = shift;
+
     # Assumes terminal window is open
     # Assumes "curl_via_netvm"
 
@@ -41,7 +54,7 @@ sub download_repo {
 
 # Following instructions at https://github.com/freedomofpress/securedrop-workstation-docs/blob/aa89494/docs/admin/install/install.rst#download-securedrop-workstation-packages
 sub qubes_contrib_keyring_bootstrap {
-    my ($environment) = @_;
+    my $self = shift;
 
     assert_script_run('sudo qubes-dom0-update -y qubes-repo-contrib', timeout => 120);
     assert_script_run('sudo qubes-dom0-update --clean -y securedrop-workstation-keyring', timeout => 120);
@@ -51,16 +64,16 @@ sub qubes_contrib_keyring_bootstrap {
     assert_script_run('sudo dnf -y remove qubes-repo-contrib');
 
     # QA: just replace the repo URL to keep it as close as possible to prod
-    if ($environment eq "prod-qa") {
+    if ($self->{environment} eq "prod-qa") {
         assert_script_run("sudo sed -i -e 's|yum.|yum-qa.|g' /etc/yum.repos.d/securedrop-workstation-keyring-dev.repo");
     }
 };
 
 sub install {
-    my ($environment) = @_;
+    my $self = shift;
 
-
-    if ($environment eq "dev") {
+    # Pick whether we'll need build local RPMs or just need access to tooling
+    if ($self->{environment} eq "dev" || get_var("SECUREDROP_UPGRADE")) {
         # Create a dev environment and sync to dom0 (allows building local RPMs)
         make_clone();
     } else {
@@ -69,29 +82,29 @@ sub install {
     }
 
     my $installation_cmd;
-    if ($environment eq "prod" || $environment eq "prod-qa") {
-        qubes_contrib_keyring_bootstrap($environment);
+    if ($self->{environment} eq "prod" || $self->{environment} eq "prod-qa") {
+        $self->qubes_contrib_keyring_bootstrap();
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
         $installation_cmd = "sdw-admin --apply";
     } else {
-        $installation_cmd = "cd securedrop-workstation && make $environment";
+        $installation_cmd = "cd securedrop-workstation && make $self->{environment}";
     }
 
-    copy_config($environment);
+    $self->copy_config();
 
     # disable screen blanking during long command
     assert_script_run('env xset -dpms; env xset s off', valid => 0, timeout => 10);
 
-    assert_script_run("$installation_cmd | tee /tmp/sdw-admin-apply_$environment.log",  timeout => 6000);
-    upload_logs('/tmp/sdw-admin-apply.log', failok => 1);
+    assert_script_run("$installation_cmd | tee " . $self->{sdw_log_path},  timeout => 6000);
+    upload_logs($self->{sdw_log_path}, failok => 1);
 };
 
 sub copy_config {
-    my ($environment) = @_;
+    my $self = shift;
     my $target_dir;
     my $sudo_modifier;
 
-    if ($environment eq "prod" || $environment eq "prod-qa") {
+    if ($self->{environment} eq "prod" || $self->{environment} eq "prod-qa") {
         # Place configuration files directly in final directory
         $target_dir = "/usr/share/securedrop-workstation-dom0-config";
         assert_script_run("sudo mkdir -p $target_dir");
@@ -102,7 +115,7 @@ sub copy_config {
         $sudo_modifier = "";  # no need for "sudo"
     }
 
-    assert_script_run('echo "{\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"bnbo6ryxq24fz27chs5fidscyqhw2hlyweelg4nmvq76tpxvofpyn4qd.onion\", \"key\": \"FDF476DUDSB5M27BIGEVIFCFGHQJ46XS3STAP7VG6Z2OWXLHWZPA\"}, \"environment\": \"' . $environment . '\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}}" | ' . $sudo_modifier . 'tee ' . $target_dir . '/config.json');
+    assert_script_run('echo "{\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"bnbo6ryxq24fz27chs5fidscyqhw2hlyweelg4nmvq76tpxvofpyn4qd.onion\", \"key\": \"FDF476DUDSB5M27BIGEVIFCFGHQJ46XS3STAP7VG6Z2OWXLHWZPA\"}, \"environment\": \"' . $self->{environment} . '\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}}" | ' . $sudo_modifier . 'tee ' . $target_dir . '/config.json');
     assert_script_run("curl https://raw.githubusercontent.com/freedomofpress/securedrop/d91dc67/securedrop/tests/files/test_journalist_key.sec.no_passphrase | $sudo_modifier tee $target_dir/sd-journalist.sec");
 
 
@@ -110,10 +123,11 @@ sub copy_config {
 
 
 sub make_clone {
+    my $self = shift;
     # Assumes terminal window is open
 
     # Obtain debian-minimal template on which to base sd-dev
-    my $debian_minimal = "debian-12-minimal";
+    my $debian_minimal = "debian-13-minimal";
     assert_script_run("qvm-check $debian_minimal || qvm-template install $debian_minimal", timeout => 900);
 
     # Create 'sd-dev' template
@@ -121,7 +135,7 @@ sub make_clone {
 
     # Building SecureDrop Workstation RPM and installing it in dom0
     assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get update"', timeout => 120);
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y make git jq qubes-core-agent-networking"', timeout => 120);
+    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y make git jq qubes-core-agent-networking qubes-core-agent-passwordless-root"', timeout => 120);
 
     # SecureDrop dev. env. according to https://developers.securedrop.org/en/latest/setup_development.html
     # DOCKER INSTALL according to https://docs.docker.com/engine/install/debian/
@@ -134,6 +148,8 @@ sub make_clone {
     assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"', timeout => 120);
     assert_script_run('qvm-run -p -u root sd-dev-tpl "groupadd docker || true"');
     assert_script_run('qvm-run -p -u root sd-dev-tpl "usermod -aG docker user"');
+
+
     assert_script_run('qvm-shutdown --wait sd-dev-tpl');
 
     assert_script_run('qvm-create sd-dev --template sd-dev-tpl --label gray');
@@ -147,22 +163,31 @@ sub make_clone {
     assert_script_run('(cd securedrop-workstation && make clone)', timeout => 1000);
 };
 
-
 sub run {
-    my ($self) = @_;
+    my ($self, $args) = @_;
 
     $self->select_gui_console;
     assert_screen "desktop";
 
     # Validate environment
-    my $environment = get_var('SECUREDROP_ENV');
+    $self->{environment} = get_var('SECUREDROP_ENV');
+    if (exists $args->{env}) {
+        # Env is overridable via 'env' argument
+        $self->{environment} = $args->{env};
+    }
     my @valid_environments = qw(dev staging prod prod-qa);
-    if (not grep { $_ eq $environment } @valid_environments) {
-        die "Invalid environment: '$environment'. It must be one of: " . join(", ", @valid_environments) . ".\n";
-    } else {
+    if (not grep { $_ eq $self->{environment} } @valid_environments) {
+        die "Invalid environment: " . $self->{environment} . ". It must be one of: " . join(", ", @valid_environments) . ".\n";
+    }
+    $self->{sdw_log_path} = "/tmp/sdw-admin-apply_" . $self->{environment} . ".log";
+
+    diag("Starting installation:");
+    diag("\tEnvironment:\t " . $self->{environment});
+    diag("\tScenario:\t " . (check_var('SECUREDROP_UPGRADE', '1') ? "upgrade" : "clean install"));
+    diag("\tLogs:\t " . $self->{sdw_log_path});
+
     x11_start_program('xterm');
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
-    }
 
     curl_via_netvm;  # necessary for curling script and uploading logs
 
@@ -171,22 +196,14 @@ sub run {
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
-    # Upgrade scenario: start from prod
-    if (get_var('SECUREDROP_UPGRADE')) {
-        install("prod");
-    }
-
-    install($environment);
+    $self->install();
 
     send_key('alt-f4');  # close terminal
 }
 
 sub upload_install_logs {
-    if (get_var('SECUREDROP_UPGRADE')) {
-        upload_logs('/tmp/sdw-admin-apply_prod.log', failok => 1);
-    }
-    my $environment = get_var('SECUREDROP_ENV');
-    upload_logs("/tmp/sdw-admin-apply_$environment.log", failok => 1);
+    my $self = shift;
+    upload_logs($self->{sdw_log_path}, failok => 1);
 }
 
 
@@ -196,7 +213,7 @@ sub post_run_hook {
     select_root_console();
 
     # Upload logs in case of successful run
-    upload_install_logs();
+    $self->upload_install_logs();
 
     # NOTE: Run at the end because some may fail and just abort execution
     $self->SUPER::post_run_hook();
@@ -211,7 +228,7 @@ sub post_fail_hook {
     script_run("cat /var/log/salt/minion");
     script_run("zcat /var/log/salt/*.gz");
 
-    upload_install_logs();
+    $self->upload_install_logs();
 
     # NOTE: Run at the end because some may fail and just abort execution
     $self->SUPER::post_fail_hook();
