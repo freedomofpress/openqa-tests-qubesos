@@ -19,16 +19,6 @@ use serial_terminal qw(select_root_console);
 
 sub run {
     my ($self) = @_;
-    $self->select_gui_console;
-
-    if (check_var('SECUREDROP_INSTALL', '1')) {
-        # Updater tests must be ran after a manadatory restart post-instllation.
-        # However, if this is ran in the same job as SECUREDROP_INSTALL, then
-        # it won't be shut down by the time this runs, thus a restart is needed.
-        x11_start_program('xterm');
-        script_run('sudo reboot', timeout => 0);
-        $self->handle_system_startup;
-    }
 
     select_root_console;
 

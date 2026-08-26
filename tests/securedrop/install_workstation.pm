@@ -26,32 +26,6 @@ sub new {
     return $self;
 }
 
-sub enable_disposable_preload() {
-    my $self = shift;
-
-    # Enables disp. qubes preloading (Assumed any machine is >= 15G RAM)
-    # This is likely necessary because the Qubes OpenQA installation is usually
-    # less than 15G of RAM, which means that disposable preloading is disabled
-    assert_script_run("sudo qubesctl top.enable qvm.disposable-preload pillar=True");
-    assert_script_run("sudo qubesctl state.apply qvm.disposable-preload", timeout => 300);
-}
-
-sub download_repo {
-    my $self = shift;
-
-    # Assumes terminal window is open
-    # Assumes "curl_via_netvm"
-
-    # Fetch the repo without the need of "sd-dev" and "make clone"
-    assert_script_run('rpm -q make unzip || sudo qubes-dom0-update -y make unzip');
-
-    # Download source from git commit reference
-    my $repo_archive_url = "https://github.com/freedomofpress/securedrop-workstation/archive/";
-    assert_script_run("curl -f -L -o - $repo_archive_url" . get_var('GIT_REF') . '.zip > sdw.zip');
-    assert_script_run('unzip sdw.zip');
-    assert_script_run('mv securedrop-workstation-* securedrop-workstation');
-};
-
 # Following instructions at https://github.com/freedomofpress/securedrop-workstation-docs/blob/aa89494/docs/admin/install/install.rst#download-securedrop-workstation-packages
 sub qubes_contrib_keyring_bootstrap {
     my $self = shift;
@@ -71,15 +45,6 @@ sub qubes_contrib_keyring_bootstrap {
 
 sub install {
     my $self = shift;
-
-    # Pick whether we'll need build local RPMs or just need access to tooling
-    if ($self->{environment} eq "dev" || get_var("SECUREDROP_UPGRADE")) {
-        # Create a dev environment and sync to dom0 (allows building local RPMs)
-        make_clone();
-    } else {
-        # Fetch repository to access Makefile, etc. (but no need to build RPMs)
-        download_repo();
-    }
 
     my $installation_cmd;
     if ($self->{environment} eq "prod" || $self->{environment} eq "prod-qa") {
@@ -121,48 +86,6 @@ sub copy_config {
 
 };
 
-
-sub make_clone {
-    my $self = shift;
-    # Assumes terminal window is open
-
-    # Obtain debian-minimal template on which to base sd-dev
-    my $debian_minimal = "debian-13-minimal";
-    assert_script_run("qvm-check $debian_minimal || qvm-template install $debian_minimal", timeout => 900);
-
-    # Create 'sd-dev' template
-    assert_script_run("qvm-check sd-dev || qvm-clone $debian_minimal sd-dev-tpl", timeout => 500);
-
-    # Building SecureDrop Workstation RPM and installing it in dom0
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get update"', timeout => 120);
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y make git jq qubes-core-agent-networking qubes-core-agent-passwordless-root"', timeout => 120);
-
-    # SecureDrop dev. env. according to https://developers.securedrop.org/en/latest/setup_development.html
-    # DOCKER INSTALL according to https://docs.docker.com/engine/install/debian/
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y ca-certificates curl"');
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "install -m 0755 -d /etc/apt/keyrings"');
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "curl --proxy 127.0.0.1:8082 -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc"');
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "chmod a+r /etc/apt/keyrings/docker.asc"');
-    assert_script_run('qvm-run -p -u root sd-dev-tpl ". /etc/os-release && echo \"deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \$VERSION_CODENAME stable\" | tee /etc/apt/sources.list.d/docker.list \> /dev/null"');
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get update"');
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"', timeout => 120);
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "groupadd docker || true"');
-    assert_script_run('qvm-run -p -u root sd-dev-tpl "usermod -aG docker user"');
-
-
-    assert_script_run('qvm-shutdown --wait sd-dev-tpl');
-
-    assert_script_run('qvm-create sd-dev --template sd-dev-tpl --label gray');
-    assert_script_run('qvm-run -p sd-dev "git clone https://github.com/freedomofpress/securedrop-workstation"');
-    assert_script_run('qvm-run -p sd-dev "git -C securedrop-workstation checkout ' . get_var('GIT_REF') . '"');
-
-    # First repo cloning (does not build RPM)
-    assert_script_run("qvm-run --pass-io sd-dev 'tar -c -C /home/user/ securedrop-workstation' | tar xvf -", timeout=>300);
-
-    # Re-clone, this time with RPM being built and copied to dom0 in the process
-    assert_script_run('(cd securedrop-workstation && make clone)', timeout => 1000);
-};
-
 sub run {
     my ($self, $args) = @_;
 
@@ -183,16 +106,12 @@ sub run {
 
     diag("Starting installation:");
     diag("\tEnvironment:\t " . $self->{environment});
-    diag("\tScenario:\t " . (check_var('SECUREDROP_UPGRADE', '1') ? "upgrade" : "clean install"));
     diag("\tLogs:\t " . $self->{sdw_log_path});
 
     x11_start_program('xterm');
     send_key('alt-f10');  # maximize xterm to ease troubleshooting
 
     curl_via_netvm;  # necessary for curling script and uploading logs
-
-    # Enable dispvm preloading to test opening documents faster
-    enable_disposable_preload;
 
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
