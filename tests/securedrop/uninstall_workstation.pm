@@ -34,6 +34,9 @@ sub run {
     assert_script_run(
         "su user -c 'sdw-admin --uninstall --force' 2>&1 | tee $uninstall_log_path",
         timeout => 3000);
+
+    # Run tests to validate successful uninstall other than the exit code
+    assert_script_run("su user -c \"make -C $sdw_path test-uninstall\"", timeout => 300);
 }
 
 sub post_run_hook {
