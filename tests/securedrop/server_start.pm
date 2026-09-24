@@ -39,7 +39,7 @@ sub run {
     assert_script_run('export JOURNALIST_KEY=$(qvm-run -p sd-dev "sudo cat /var/lib/docker/volumes/sd-onion-services/_data/journalist/authorized_clients/client.auth"| cut -d: -f3)');
     assert_script_run('sudo mkdir -p /usr/share/securedrop-workstation-dom0-config/');
     assert_script_run('echo {\"submission_key_fpr\": \"65A1B5FF195B56353CC63DFFCC40EF1228271441\", \"hidserv\": {\"hostname\": \"$JOURNALIST_ONION\", \"key\": \"$JOURNALIST_KEY\"}, \"environment\": \"prod\", \"vmsizes\": {\"sd_app\": 10, \"sd_log\": 5}} | sudo tee /usr/share/securedrop-workstation-dom0-config/config.json');
-    type_string("cd /usr/bin && python3 -i sdw-admin --validate\n");
+    type_string("cd /usr/bin && python3 -i securedrop-manage --validate\n");
     type_string("copy_config()\n");
     sleep(1);
     send_key('ctrl-d');

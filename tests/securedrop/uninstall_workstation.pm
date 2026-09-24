@@ -17,7 +17,7 @@ use testapi;
 use networking;
 use serial_terminal qw(select_root_console);
 
-my $uninstall_log_path = "/tmp/sdw-admin-uninstall.log";
+my $uninstall_log_path = "/tmp/securedrop-manage-uninstall.log";
 
 sub run {
     my ($self) = @_;
@@ -30,9 +30,9 @@ sub run {
     assert_script_run('set -o pipefail');  # Ensure pipes fail
 
     # '--force' skips the interactive confirmation prompt.
-    # assert_script_run fails the test unless sdw-admin exits with code 0.
+    # assert_script_run fails the test unless securedrop-manage exits with code 0.
     assert_script_run(
-        "su user -c 'sdw-admin --uninstall --force' 2>&1 | tee $uninstall_log_path",
+        "su user -c 'securedrop-manage --uninstall --force' 2>&1 | tee $uninstall_log_path",
         timeout => 3000);
 }
 
