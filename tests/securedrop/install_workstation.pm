@@ -86,7 +86,7 @@ sub install {
     if ($self->{environment} eq "prod" || $self->{environment} eq "prod-qa") {
         $self->qubes_contrib_keyring_bootstrap();
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
-        $installation_cmd = "sdw-admin --apply --$product";
+        $installation_cmd = "securedrop-manage --apply --$product";
     } else {
         $installation_cmd = "cd securedrop-workstation && ";
         if ($product eq "journalist") {
@@ -191,7 +191,7 @@ sub run {
     if (not grep { $_ eq $self->{environment} } @valid_environments) {
         die "Invalid environment: " . $self->{environment} . ". It must be one of: " . join(", ", @valid_environments) . ".\n";
     }
-    $self->{sdw_log_path} = "/tmp/sdw-admin-apply_" . $self->{environment} . ".log";
+    $self->{sdw_log_path} = "/tmp/securedrop-manage-apply_" . $self->{environment} . ".log";
 
     diag("Starting installation:");
     diag("\tEnvironment:\t " . $self->{environment});
