@@ -46,7 +46,12 @@ sub run {
     assert_script_run("make -C $sdw_path install-dom0-test-prereqs", timeout => 300);
 
     # Run tests
-    assert_script_run("su user -c \"env XAUTHORITY=/run/lightdm/user/xauthority DISPLAY=:0.0 CI=true make -C $sdw_path test\"", timeout => 2400);
+    my $product = get_var("SECUREDROP_PRODUCT", "journalist");
+    if ($product eq "journalist" || $product eq "all") {
+        assert_script_run("su user -c \"env XAUTHORITY=/run/lightdm/user/xauthority DISPLAY=:0.0 CI=true make -C $sdw_path test\"", timeout => 2400);
+    } elsif ($product eq "admin") {
+        die "Admin tests not yet implemented!";
+    }
 }
 
 sub post_run_hook {
