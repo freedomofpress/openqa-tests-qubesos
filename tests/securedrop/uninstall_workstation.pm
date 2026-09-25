@@ -18,6 +18,7 @@ use networking;
 use serial_terminal qw(select_root_console);
 
 my $uninstall_log_path = "/tmp/sdw-admin-uninstall.log";
+my $sdw_path = "/home/user/securedrop-workstation";
 
 sub run {
     my ($self) = @_;
