@@ -1,0 +1,8 @@
+#cloud-config
+chpasswd:
+  expire: false
+  list: |
+    root:userpass
+runcmd:
+  - systemctl enable --now serial-getty@hvc0.service
+  - echo support-server-cloud-init-done > /dev/ttyS0

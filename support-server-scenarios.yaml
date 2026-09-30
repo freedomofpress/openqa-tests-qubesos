@@ -28,10 +28,14 @@ job_templates:
     product: qubesos-4.3-securedrop-x86_64
     machine: 64bit
     settings:
-      HDD_1: disk_unencrypted_minimal_4.3_64bit_stable.qcow2
-      KERNEL_VERSION: stable
+      HDD_1: focal-server-cloudimg-amd64.img
+      HDD_1_URL: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+      QEMURAM: '2048'
+      # cloud-init reads user-data and meta-data from this URL on first boot
+      QEMU_APPEND: smbios type=1,serial=ds=nocloud-net;s=https://raw.githubusercontent.com/freedomofpress/openqa-tests-qubesos/support-server-validation/tests/securedrop/support_server_focal/
+      SERIALDEV: ttyS0
       WORKER_CLASS: hdd_download
-      SECUREDROP_SUPPORT_SERVER: '1'
+      SECUREDROP_SUPPORT_SERVER: focal
       NICTYPE_USER_OPTIONS: hostfwd=tcp::18080-:8000
       PARALLEL_ONE_HOST_ONLY: '1'
   support_server_client:

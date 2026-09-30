@@ -23,6 +23,12 @@ use OpenQA::Test::RunArgs;
 require 'qubesdistribution.pm';
 testapi::set_distribution(qubesdistribution->new());
 
+# non-Qubes job, skip everything that assumes Qubes
+if (check_var('SECUREDROP_SUPPORT_SERVER', 'focal')) {
+    autotest::loadtest("tests/securedrop/support_server_focal.pm");
+    return 1;
+}
+
 if (get_var('ISO')) {
     autotest::loadtest "tests/isosize.pm";
     if (get_var('INSTALL_ISO_FILE')) {
@@ -202,10 +208,6 @@ if (check_var('SECUREDROP_INSTALL', '1')) {
     # autotest::loadtest("tests/securedrop/server_start.pm");
     # autotest::loadtest("tests/securedrop/test_gui_basic.pm");
  }
-
-if (get_var('SECUREDROP_SUPPORT_SERVER')) {
-    autotest::loadtest("tests/securedrop/support_server.pm");
-}
 
 if (get_var('SECUREDROP_USE_SUPPORT_SERVER')) {
     autotest::loadtest("tests/securedrop/support_server_client.pm");
