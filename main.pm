@@ -203,6 +203,14 @@ if (check_var('SECUREDROP_INSTALL', '1')) {
     # autotest::loadtest("tests/securedrop/test_gui_basic.pm");
  }
 
+if (get_var('SECUREDROP_SUPPORT_SERVER')) {
+    autotest::loadtest("tests/securedrop/support_server.pm");
+}
+
+if (get_var('SECUREDROP_USE_SUPPORT_SERVER')) {
+    autotest::loadtest("tests/securedrop/support_server_client.pm");
+}
+
 if (get_var('DISPVM_PRELOAD')) {
     autotest::loadtest "tests/dispvm_preload.pm";
 }

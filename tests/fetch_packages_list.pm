@@ -32,6 +32,8 @@ sub run {
 
     return if (!$my_info->{has_parents});
     my $parent = $my_info->{parents}->{Chained}[0] // $my_info->{parents}->{'Directly chained'}[0];
+    # only parallel parents
+    return unless defined $parent;
     $url->path("tests/$parent/file/sut_packages.txt");
     my $res = $ua->get($url)->res;
     return if $res->code == 404;

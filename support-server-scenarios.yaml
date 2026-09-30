@@ -1,0 +1,47 @@
+---
+# Ad hoc scenario definitions for the support server validation jobs.
+products:
+  qubesos-4.3-securedrop-x86_64:
+    distri: qubesos
+    flavor: securedrop
+    arch: x86_64
+    version: '4.3'
+    settings:
+      XRES: '1920'
+      YRES: '1080'
+machines:
+  64bit:
+    backend: qemu
+    settings:
+      HDDMODEL: scsi-hd
+      HDDSIZEGB: '80'
+      NICMODEL: e1000e
+      PART_TABLE_TYPE: mbr
+      QEMUCPU: host,+vmx,+invtsc
+      QEMUCPUS: '2'
+      QEMUMACHINE: q35,kernel-irqchip=split
+      QEMURAM: '8192'
+      QEMU_DISABLE_SNAPSHOTS: '1'
+      VIRTIO_CONSOLE: '1'
+job_templates:
+  support_server:
+    product: qubesos-4.3-securedrop-x86_64
+    machine: 64bit
+    settings:
+      HDD_1: disk_unencrypted_minimal_4.3_64bit_stable.qcow2
+      KERNEL_VERSION: stable
+      WORKER_CLASS: hdd_download
+      SECUREDROP_SUPPORT_SERVER: '1'
+      NICTYPE_USER_OPTIONS: hostfwd=tcp::18080-:8000
+      PARALLEL_ONE_HOST_ONLY: '1'
+  support_server_client:
+    product: qubesos-4.3-securedrop-x86_64
+    machine: 64bit
+    settings:
+      HDD_1: disk_unencrypted_minimal_4.3_64bit_stable.qcow2
+      KERNEL_VERSION: stable
+      WORKER_CLASS: hdd_download
+      SECUREDROP_USE_SUPPORT_SERVER: '1'
+      SECUREDROP_SUPPORT_SERVER_PORT: '18080'
+      PARALLEL_WITH: support_server
+      PARALLEL_ONE_HOST_ONLY: '1'
