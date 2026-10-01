@@ -86,7 +86,7 @@ sub install {
     if ($self->{environment} eq "prod" || $self->{environment} eq "prod-qa") {
         $self->qubes_contrib_keyring_bootstrap();
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
-        $installation_cmd = "securedrop-manage --apply --$product";
+        $installation_cmd = "securedrop-manage --apply --target $product";
     } else {
         $installation_cmd = "cd securedrop-workstation && ";
         if ($product eq "journalist") {

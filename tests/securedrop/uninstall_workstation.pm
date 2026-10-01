@@ -33,7 +33,7 @@ sub run {
     # '--force' skips the interactive confirmation prompt.
     # assert_script_run fails the test unless securedrop-manage exits with code 0.
     assert_script_run(
-        "su user -c 'securedrop-manage --uninstall --force' 2>&1 | tee $uninstall_log_path",
+        "su user -c 'securedrop-manage --uninstall --force --target all' 2>&1 | tee $uninstall_log_path",
         timeout => 3000);
 
     # Run tests to validate successful uninstall other than the exit code
