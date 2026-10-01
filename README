@@ -82,6 +82,5 @@ SecureDrop variables used in tests:
  - `SECUREDROP_TEST` - when set with a value, SecureDrop tests are run on top of an existing installation
  - `SECUREDROP_ENV` - target envionment ('dev', 'staging', 'prod', 'prod-qa')
  - `SECUREDROP_UPGRADE` - when set to any value, it'll install prod first and then the target `SECUREDROP_ENV`
- - `SECUREDROP_SUPPORT_SERVER` - when set to `focal`, the job is an Ubuntu focal cloud image instead of Qubes; it serves a test file over HTTP (port 8000) and waits for its parallel children; expose the port on the worker host with `NICTYPE_USER_OPTIONS=hostfwd=tcp::18080-:8000`
+ - `SECUREDROP_SUPPORT_SERVER` - when set to `focal`, the job is an Ubuntu focal cloud image instead of Qubes; it serves a test file over HTTP (port 8000) and waits for its parallel children; expose the port on the worker host with `NICTYPE_USER_OPTIONS=hostfwd=tcp::180%WORKER_INSTANCE%-:8000`, so each worker instance uses its own host port
  - `SECUREDROP_USE_SUPPORT_SERVER` - when set, the job waits for the support server (set `PARALLEL_WITH` to it) and fetches the test file from it; both jobs need `PARALLEL_ONE_HOST_ONLY=1`, as the forwarded port is only reachable on the same worker host
- - `SECUREDROP_SUPPORT_SERVER_PORT` - port on the worker host that leads to the support server (default `18080`)

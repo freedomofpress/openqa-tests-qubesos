@@ -36,7 +36,7 @@ job_templates:
       SERIALDEV: ttyS0
       WORKER_CLASS: hdd_download
       SECUREDROP_SUPPORT_SERVER: focal
-      NICTYPE_USER_OPTIONS: hostfwd=tcp::18080-:8000
+      NICTYPE_USER_OPTIONS: hostfwd=tcp::180%WORKER_INSTANCE%-:8000
       PARALLEL_ONE_HOST_ONLY: '1'
   support_server_client:
     product: qubesos-4.3-securedrop-x86_64
@@ -46,6 +46,5 @@ job_templates:
       KERNEL_VERSION: stable
       WORKER_CLASS: hdd_download
       SECUREDROP_USE_SUPPORT_SERVER: '1'
-      SECUREDROP_SUPPORT_SERVER_PORT: '18080'
       PARALLEL_WITH: support_server
       PARALLEL_ONE_HOST_ONLY: '1'
