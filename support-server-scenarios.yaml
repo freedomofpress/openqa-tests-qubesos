@@ -32,7 +32,7 @@ job_templates:
       HDD_1_URL: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
       QEMURAM: '2048'
       # cloud-init reads user-data and meta-data from this URL on first boot
-      QEMU_APPEND: smbios type=1,serial=ds=nocloud-net;s=https://raw.githubusercontent.com/freedomofpress/openqa-tests-qubesos/support-server-validation/tests/securedrop/support_server_focal/
+      QEMU_SMBIOS: type=1,serial=ds=nocloud-net;s=https://raw.githubusercontent.com/freedomofpress/openqa-tests-qubesos/support-server-validation/tests/securedrop/support_server_focal/
       SERIALDEV: ttyS0
       WORKER_CLASS: hdd_download
       SECUREDROP_SUPPORT_SERVER: focal
