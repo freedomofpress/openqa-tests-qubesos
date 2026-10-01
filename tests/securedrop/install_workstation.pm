@@ -88,18 +88,7 @@ sub install {
         assert_script_run("sudo qubes-dom0-update --clean -y securedrop-workstation-dom0-config");
         $installation_cmd = "securedrop-manage --apply --target $product";
     } else {
-        $installation_cmd = "cd securedrop-workstation && ";
-        if ($product eq "journalist") {
-            $installation_cmd .= "make $self->{environment}";
-        } elsif ($product eq "admin") {
-            # NOTE: admin variant still in development. Ideally we harmonize the make commands
-            $installation_cmd .= "make install-admin-rpm && make sd-admin";
-        } elsif ($product eq "all") {
-            # NOTE: make targets are not yet defined
-            die "installing 'all' products not yet supported";
-        } else {
-            die "unknown product '$product '";
-        }
+        $installation_cmd = "cd securedrop-workstation && make $self->{environment}-$product";
     }
 
     $self->copy_config();
