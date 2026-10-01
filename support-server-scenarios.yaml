@@ -28,7 +28,7 @@ job_templates:
     product: qubesos-4.3-securedrop-x86_64
     machine: 64bit
     settings:
-      HDD_1: focal-server-cloudimg-amd64.img
+      HDD_1: focal-server-cloudimg-amd64.qcow2
       HDD_1_URL: https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
       QEMURAM: '2048'
       # cloud-init reads user-data and meta-data from this URL on first boot
