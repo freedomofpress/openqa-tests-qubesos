@@ -204,6 +204,10 @@ sub run {
 
 sub upload_install_logs {
     my $self = shift;
+
+    # Print install log before uploading it due to longstanding
+    # issue https://github.com/QubesOS/qubes-issues/issues/9581
+    script_run("cat " .  $self->{sdw_log_path});
     upload_logs($self->{sdw_log_path}, failok => 1);
 }
 
