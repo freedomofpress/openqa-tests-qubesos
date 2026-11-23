@@ -15,7 +15,7 @@ use base "installedtest";
 use strict;
 use testapi;
 use networking;
-use serial_terminal qw(select_root_console);
+use serial_terminal qw(select_root_console select_user_console);
 use OpenQA::Test::RunArgs;
 
 
@@ -187,8 +187,17 @@ sub run {
     diag("\tScenario:\t " . (check_var('SECUREDROP_UPGRADE', '1') ? "upgrade" : "clean install"));
     diag("\tLogs:\t " . $self->{sdw_log_path});
 
-    x11_start_program('xterm');
-    send_key('alt-f10');  # maximize xterm to ease troubleshooting
+    # Disk image predates install_fixups enabling the user console getty
+    select_root_console();
+    assert_script_run('systemctl start serial-getty@hvc2.service');
+
+    select_user_console();
+    # Validate it's a login session on the expected device
+    assert_script_run('test "$(id -un)" = user');
+    assert_script_run('tty | grep -x /dev/hvc2');
+    assert_script_run('systemctl --user show-environment > /dev/null');
+    # Join the graphical session
+    assert_script_run('export DISPLAY=:0.0 XAUTHORITY=/run/lightdm/user/xauthority');
 
     curl_via_netvm;  # necessary for curling script and uploading logs
 
@@ -198,8 +207,6 @@ sub run {
     assert_script_run('set -o pipefail'); # Ensure pipes fail
 
     $self->install();
-
-    send_key('alt-f4');  # close terminal
 }
 
 sub upload_install_logs {
