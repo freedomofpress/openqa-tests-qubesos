@@ -151,6 +151,8 @@ sub upgrade_42_to_43_before_reboot {
         script_run("systemctl enable sshd");
     } else {
         assert_script_run("systemctl enable serial-getty\@hvc1.service");
+        # user-virtio-terminal
+        assert_script_run("systemctl enable serial-getty\@hvc2.service");
     }
 }
 

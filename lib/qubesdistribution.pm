@@ -19,6 +19,7 @@
 package qubesdistribution;
 use base 'distribution';
 use strict;
+use Cwd qw(cwd);
 use serial_terminal ();
 
 use testapi qw(diag check_var get_var set_var
@@ -65,6 +66,9 @@ sub init_consoles {
 
     if (check_var('BACKEND', 'qemu')) {
         $self->add_console('root-virtio-terminal', 'virtio-terminal', {});
+        # os-autoinst always creates a second virtio console for this
+        $self->add_console('user-virtio-terminal', 'virtio-terminal',
+                {socked_path => cwd() . '/virtio_console_user'});
     } elsif (check_var('BACKEND', 'generalhw')) {
         # do the same as in openqa-serial script
         my $hostid = (get_var('GENERAL_HW_SOL_ARGS') =~ m/--hostid=(\d+)/)[0];
@@ -148,7 +152,7 @@ sub console_selected {
     my ($self, $console, %args) = @_;
     $args{await_console} //= 1;
     $args{tags}          //= $console;
-    $args{ignore}        //= qr{sut|root-virtio-terminal|iucvconn|svirt|root-ssh};
+    $args{ignore}        //= qr{sut|(?:root|user)-virtio-terminal|iucvconn|svirt|root-ssh};
     return unless $args{await_console};
     return if $args{tags} =~ $args{ignore};
     # x11 needs special handling because we can not easily know if screen is

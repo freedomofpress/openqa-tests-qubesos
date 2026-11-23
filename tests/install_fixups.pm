@@ -50,6 +50,8 @@ sub run {
     script_run("gpasswd -a $testapi::username \$(stat -c %G /dev/$testapi::serialdev)");
     if (check_var('BACKEND', 'qemu')) {
         assert_script_run("systemctl enable serial-getty\@hvc1.service");
+        # user-virtio-terminal
+        assert_script_run("systemctl enable serial-getty\@hvc2.service");
     }
     assert_script_run("echo 'KERNEL==\"hvc*|ttyS*\", GROUP=\"qubes\", MODE=\"0660\"' > /etc/udev/rules.d/90-openqa.rules");
     if (check_var('BACKEND', 'generalhw') and get_var('PARTITIONING', 'default') eq 'default') {

@@ -21,6 +21,7 @@ BEGIN {
       get_login_message
       login
       select_root_console
+      select_user_console
       serial_term_prompt
     );
 }
@@ -110,6 +111,22 @@ sub select_root_console {
     # XXX: unused for now
     select_console('root-console');
     return 0;
+}
+
+=head2 select_user_console
+
+   select_user_console();
+
+Select 'user-virtio-terminal': a serial console logged in as
+$testapi::username. Unlike 'su user' from the root console, this is a real
+login session (XDG_RUNTIME_DIR, session D-Bus, systemctl --user work).
+DISPLAY is not set; export it to use the graphical session.
+Only available with the qemu backend.
+=cut
+sub select_user_console {
+    die 'user-virtio-terminal is only available on qemu backend'
+        unless check_var('BACKEND', 'qemu');
+    select_console('user-virtio-terminal');
 }
 
 sub serial_term_prompt {
